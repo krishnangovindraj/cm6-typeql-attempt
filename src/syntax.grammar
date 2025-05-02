@@ -1,26 +1,288 @@
-@top Program { expression* }
+@top QueryPipeline { Pipeline }
 
-@skip { space | LineComment }
+@skip { Whitespace | LineComment }
 
-expression {
-  Identifier |
-  String |
-  Boolean |
-  Application { "(" expression* ")" }
+//QueryPipelinePreambled {
+//  Preamble* Pipeline
+//}
+
+//Pipeline {
+//  QueryStage+ QueryStageTerminal?
+//}
+
+
+//Preamble {
+//  With DefinitionFunction
+//}
+
+Pipeline {
+  QueryStage+ End Semicolon
 }
+QueryStage {
+  ClauseMatch
+  // ClauseInsert |
+  // ClausePut |
+  // ClauseUpdate |
+  // ClauseDelete |
+  // OperatorStream
+}
+
+//QueryStageTerminal {
+//  ClauseFetch Semicolon
+//}
+
+// Stages
+ClauseMatch {
+  Match Patterns
+}
+
+
+//ClauseInsert {
+//  Insert (StatementThing Semicolon | StatementAssignment Semicolon)+
+//}
+
+// ClausePut {
+//  Put (StatementThing Semicolon)+
+//}
+
+//ClauseUpdate {
+//  Update (StatementThing Semicolon)+
+//}
+
+//ClauseDelete {
+//  Delete (StatementDeletable Semicolon)+
+//}
+
+// OperatorStream {
+  // OperatorSelect |
+//  OperatorSort |
+//  OperatorDistinct |
+//  OperatorOffset |
+//  OperatorLimit |
+//  OperatorRequire |
+//  OperatorReduce
+// }
+
+//OperatorSelect {
+//  Select Vars Semicolon
+//}
+
+//OperatorSort {
+//  Sort VarOrder (Comma VarOrder)* Semicolon
+//}
+
+//OperatorOffset {
+//  Offset IntegerLiteral Semicolon
+//}
+
+//OperatorLimit {
+//  Limit IntegerLiteral Semicolon
+//}
+
+//OperatorRequire {
+//  Require Vars Semicolon
+//}
+
+//OperatorDistinct {
+//  Distinct Semicolon
+//}
+
+//OperatorReduce {
+//  Reduce ReduceAssign (Comma ReduceAssign)* (Groupby Vars)? Semicolon
+//}
+
+// Stage arguments
+//VarOrder {
+//  Var Order?
+//}
+
+//ReduceAssign {
+//  (ReduceAssignmentVar Assign Reducer)
+//}
+
+//ReduceAssignmentVar {
+//  VarOptional | Var
+//}
+
+//Reducer {
+//  Count (ParenOpen Var ParenClose)? |
+//  Max ParenOpen Var ParenClose |
+//  Min ParenOpen Var ParenClose |
+//  Mean ParenOpen Var ParenClose |
+//  Median ParenOpen Var ParenClose |
+//  Std ParenOpen Var ParenClose |
+//  Sum ParenOpen Var ParenClose |
+//  List ParenOpen Var ParenClose
+//}
+  
+// Patterns
+Patterns {
+  (Pattern Semicolon)+
+}
+
+Pattern {
+  Statement
+  // PatternDisjunction |
+  // PatternConjunction |
+  // PatternNegation |
+  // PatternTry
+}
+
+// PatternConjunction {
+//   CurlyOpen Patterns CurlyClose
+// }
+
+// PatternDisjunction {
+//   CurlyOpen Patterns CurlyClose (Or CurlyOpen Patterns CurlyClose)+
+// }
+
+// PatternNegation {
+//   Not CurlyOpen Patterns CurlyClose
+// }
+
+//PatternTry {
+//  Try CurlyOpen Patterns CurlyClose
+//}
+
+Statement {
+  // StatementSingle |
+  // StatementType |
+  StatementThing
+}
+
+StatementThing {
+  Var Comma? ThingConstraintList
+  // ThingRelationAnonymous (Comma? ThingConstraintList)?
+}
+
+// ThingRelationAnonymous {
+//   TypeRef? Relation
+// }
+
+ThingConstraintList {
+  ThingConstraint (Comma ThingConstraint)* Comma?
+}
+
+ThingConstraint {
+  IsaConstraint |
+  // IidConstraint |
+  HasConstraint |
+  LinksConstraint
+}
+
+IsaConstraint {
+  Isa TypeRef
+  // Isa TypeRef  (Relation | Expression | ValueLiteral | ExpressionStruct | Comparison)?
+}
+
+// IidConstraint {
+//   Iid IidValue
+// }
+
+HasConstraint {
+  Has TypeRef Var Semicolon |
+  Has TypeRef ValueLiteral Semicolon |
+  Has Var Semicolon
+}
+
+LinksConstraint {
+  Links Relation
+}
+
+Relation {
+  ParenOpen RolePlayer (Comma RolePlayer)* Comma? ParenClose
+}
+
+RolePlayer {
+  // TypeRefList Colon Var |
+  TypeRef Colon Var |
+  Var
+}
+
+// TypeRefList {
+//   TypeRef SqBracketOpen SqBracketClose
+// }
+
+TypeRef {
+  // LabelScoped |
+  Label |
+  Var
+}
+
+// LabelScoped {
+//   Label Colon Label
+// }
+
+
+ValueLiteral {
+  StringLiteral |
+  IntegerLiteral
+  // TODO
+}
+
 
 @tokens {
-  Identifier { $[a-zA-Z_\-0-9]+ }
+  Var { Dollar $[a-zA-Z_\-0-9]+ }
+  Label { $[a-zA-Z_\-0-9]+ }
+  Dollar { "$" }
 
-  String { '"' (!["\\] | "\\" _)* '"' }
+  // With { "with" }
+  Match { "match" }
+  // Insert { "insert" }
+  // Put { "put" }
+  // Update { "update" }
+  // Delete { "delete" }
+  // Select { "select" }
+  // Sort { "sort" }
+  // Offset { "offset" }
+  // Limit { "limit" }
+  // Require { "require" }
+  // Distinct { "distinct" }
+  // Reduce { "reduce" }
+  // Groupby { "groupby" }
+  // Count { "count" }
+  End { "end" }
 
-  Boolean { "#t" | "#f" }
+  // Max { "max" }
+  // Min { "min" }
+  // Mean { "mean" }
+  // Median { "median" }
+  // Std { "std" }
+  // Sum { "sum" }
+  // List { "list" }
+  // Order { AscendingOrder | DescendingOrder }
+  // AscendingOrder { "asc" }
+  // DescendingOrder { "desc" }
+  // Assign { "=" }
+  
+  // // Patterns
+  // Or { "or" }
+  // Not { "not" }
+  // Try { "try" }
+  
+  // Statements
+  Has { "has" }
+  Isa { "isa" }
+  Links { "links" }
+  
+  
+  // Punctuation
+  Semicolon { ";" }
+  Comma { "," }
+  Colon { ":" }
+  ParenOpen { "(" }
+  ParenClose { ")" }
+  // CurlyOpen { "{" }
+  // CurlyClose { "}" }
+  // SqBracketOpen { "[" }
+  // SqBracketClose { "]" }
 
-  LineComment { ";" ![\n]* }
+  //@precedence { AscendingOrder, DescendingOrder }
 
-  space { $[ \t\n\r]+ }
-
-  "(" ")"
+  // Literals
+  StringLiteral { '"' (!["\\] | "\\" _)* '"' }
+  IntegerLiteral { "-"? $[0-9]+ }
+  
+  LineComment { "#" ![\n]* }
+  Whitespace { @whitespace+ }
 }
-
-@detectDelim
