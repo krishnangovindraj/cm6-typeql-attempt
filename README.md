@@ -4,7 +4,7 @@ This is an example repository containing a minimal [CodeMirror](https://codemirr
 
 Things you'll need to do (see the [language support example](https://codemirror.net/6/examples/lang-package/) for a more detailed tutorial):
 
- * `git grep EXAMPLE` and replace all instances with your language name.
+ * ~~`git grep EXAMPLE` and replace all instances with your language name.~~ Done.
 
  * Rewrite the grammar in `src/syntax.grammar` to cover your language. See the [Lezer system guide](https://lezer.codemirror.net/docs/guide/#writing-a-grammar) for information on this file format.
 
@@ -18,4 +18,4 @@ Things you'll need to do (see the [language support example](https://codemirror.
 
  * Optionally add a license.
 
- * Publish. Put your package on npm under a name like `codemirror-lang-EXAMPLE`.
+ * Publish. Put your package on npm under a name like `codemirror-lang-typeql`.
