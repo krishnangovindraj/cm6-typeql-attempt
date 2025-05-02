@@ -180,9 +180,9 @@ IsaConstraint {
 // }
 
 HasConstraint {
-  Has TypeRef Var Semicolon |
-  Has TypeRef ValueLiteral Semicolon |
-  Has Var Semicolon
+  Has TypeRef Var |
+  Has TypeRef ValueLiteral |
+  Has Var
 }
 
 LinksConstraint {
@@ -284,5 +284,5 @@ ValueLiteral {
   IntegerLiteral { "-"? $[0-9]+ }
   
   LineComment { "#" ![\n]* }
-  Whitespace { @whitespace+ }
+  Whitespace { $[ \t\n\r]+ }
 }

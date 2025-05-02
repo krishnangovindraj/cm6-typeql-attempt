@@ -6,22 +6,21 @@ export const TypeQLLanguage = LRLanguage.define({
   parser: parser.configure({
     props: [
       indentNodeProp.add({
-        Application: delimitedIndent({closing: ")", align: false})
+        QueryStage: delimitedIndent({closing: ")", align: false})
       }),
       foldNodeProp.add({
-        Application: foldInside
+        QueryStage: foldInside
       }),
       styleTags({
-        Identifier: t.variableName,
-        Boolean: t.bool,
-        String: t.string,
+        Var: t.variableName,
+        StringLiteral: t.string,
         LineComment: t.lineComment,
         "( )": t.paren
       })
     ]
   }),
   languageData: {
-    commentTokens: {line: ";"}
+    commentTokens: {line: "#"}
   }
 })
 
