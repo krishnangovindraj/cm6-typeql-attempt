@@ -1,6 +1,6 @@
 @top QueryPipeline { Pipeline }
-
 @skip { Whitespace | LineComment }
+
 
 //QueryPipelinePreambled {
 //  Preamble* Pipeline
@@ -121,28 +121,28 @@ Patterns {
 }
 
 Pattern {
-  Statement
-  // PatternDisjunction |
-  // PatternConjunction |
-  // PatternNegation |
-  // PatternTry
+  Statement |
+  PatternDisjunction |
+  PatternConjunction |
+  PatternNegation |
+  PatternTry
 }
 
-// PatternConjunction {
-//   CurlyOpen Patterns CurlyClose
-// }
+PatternConjunction {
+  CurlyOpen Patterns CurlyClose
+}
 
-// PatternDisjunction {
-//   CurlyOpen Patterns CurlyClose (Or CurlyOpen Patterns CurlyClose)+
-// }
+PatternDisjunction {
+  CurlyOpen Patterns CurlyClose (Or CurlyOpen Patterns CurlyClose)+
+}
 
-// PatternNegation {
-//   Not CurlyOpen Patterns CurlyClose
-// }
+PatternNegation {
+  Not CurlyOpen Patterns CurlyClose
+}
 
-//PatternTry {
-//  Try CurlyOpen Patterns CurlyClose
-//}
+PatternTry {
+ Try CurlyOpen Patterns CurlyClose
+}
 
 Statement {
   // StatementSingle |
@@ -175,9 +175,9 @@ IsaConstraint {
   // Isa TypeRef  (Relation | Expression | ValueLiteral | ExpressionStruct | Comparison)?
 }
 
-// IidConstraint {
-//   Iid IidValue
-// }
+IidConstraint {
+  Iid IidValue
+}
 
 HasConstraint {
   Has TypeRef Var |
@@ -235,7 +235,7 @@ ValueLiteral {
   // Select { "select" }
   // Sort { "sort" }
   // Offset { "offset" }
-  // Limit { "limit" }
+  // Limit { "limit" }np
   // Require { "require" }
   // Distinct { "distinct" }
   // Reduce { "reduce" }
@@ -255,15 +255,22 @@ ValueLiteral {
   // DescendingOrder { "desc" }
   // Assign { "=" }
   
-  // // Patterns
-  // Or { "or" }
-  // Not { "not" }
-  // Try { "try" }
+  // Patterns
+  Or { "or" }
+  Not { "not" }
+  Try { "try" }
   
   // Statements
   Has { "has" }
   Isa { "isa" }
   Links { "links" }
+  Iid { "iid" }
+
+  // LabelConstraint { "label" }
+  // Owns { "owns" }
+  // Relates { "relates" }
+  // Plays { "plays" }
+
   
   
   // Punctuation
@@ -272,8 +279,8 @@ ValueLiteral {
   Colon { ":" }
   ParenOpen { "(" }
   ParenClose { ")" }
-  // CurlyOpen { "{" }
-  // CurlyClose { "}" }
+  CurlyOpen { "{" }
+  CurlyClose { "}" }
   // SqBracketOpen { "[" }
   // SqBracketClose { "]" }
 
