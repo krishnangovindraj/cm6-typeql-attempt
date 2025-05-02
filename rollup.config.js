@@ -8,5 +8,6 @@ export default {
     {file: "dist/index.cjs", format: "cjs"},
     {dir: "./dist", format: "es"}
   ],
+   // Ah, this lezer() is the magic that lets me import from a .grammar file. Nice.
   plugins: [lezer(), typescript()]
 }
