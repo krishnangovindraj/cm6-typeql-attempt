@@ -10,43 +10,36 @@ QueryPipeline(
   Pipeline(
     QueryStage(
       ClauseMatch(
-        Match,
-        Whitespace
+        MATCH,
         Patterns(
           Pattern(
             Statement(
               StatementThing(
-                Var, 
-                Whitespace,
+                VAR, 
                 ThingConstraintList(
                   ThingConstraint(
                     IsaConstraint(
-                      Isa,
-                      Whitespace,
-                      TypeRef(Label)
+                      ISA,
+                      TypeRef(LABEL)
                     ),
                   ),
-                  Comma,
-                  Whitespace,
+                  COMMA,
                   ThingConstraint(
                     HasConstraint(
-                      Has,
-                      Whitespace,
-                      TypeRef(Label),
-                      Whitespace,
-                      Var,
+                      HAS,
+                      TypeRef(LABEL),
+                      VAR,
                     )
                   )
                 )
               )
             )
           ),
-          Semicolon
+          SEMICOLON
         )
       )
     )
-    Whitespace,
-    End,
-    Semicolon
+    END,
+    SEMICOLON
   )
 )

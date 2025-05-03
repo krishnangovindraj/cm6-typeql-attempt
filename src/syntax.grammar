@@ -1,5 +1,5 @@
 @top QueryPipeline { Pipeline }
-@skip { Whitespace | LineComment }
+@skip { whitespace | linecomment }
 
 
 //QueryPipelinePreambled {
@@ -12,49 +12,50 @@
 
 
 //Preamble {
-//  With DefinitionFunction
+//  WITH DefinitionFunction
 //}
 
 Pipeline {
-  QueryStage+ End Semicolon
+  QueryStage+ END SEMICOLON
 }
 QueryStage {
-  ClauseMatch
-  // ClauseInsert |
-  // ClausePut |
-  // ClauseUpdate |
-  // ClauseDelete |
+  ClauseMatch |
+  ClauseInsert |
+  ClausePut |
+  ClauseUpdate |
+  ClauseDelete // |
   // OperatorStream
 }
 
 //QueryStageTerminal {
-//  ClauseFetch Semicolon
+//  ClauseFetch SEMICOLON
 //}
 
 // Stages
 ClauseMatch {
-  Match Patterns
+  MATCH Patterns
 }
 
 
-//ClauseInsert {
-//  Insert (StatementThing Semicolon | StatementAssignment Semicolon)+
-//}
+ClauseInsert {
+  INSERT (StatementThing SEMICOLON)+
+//  INSERT (StatementThing SEMICOLON | StatementAssignment SEMICOLON)+
+}
 
-// ClausePut {
-//  Put (StatementThing Semicolon)+
-//}
+ClausePut {
+ PUT (StatementThing SEMICOLON)+
+}
 
-//ClauseUpdate {
-//  Update (StatementThing Semicolon)+
-//}
+ClauseUpdate {
+ UPDATE (StatementThing SEMICOLON)+
+}
 
-//ClauseDelete {
-//  Delete (StatementDeletable Semicolon)+
-//}
+ClauseDelete {
+ DELETE (StatementDeletable SEMICOLON)+
+}
 
 // OperatorStream {
-  // OperatorSelect |
+//  OperatorSelect |
 //  OperatorSort |
 //  OperatorDistinct |
 //  OperatorOffset |
@@ -64,60 +65,60 @@ ClauseMatch {
 // }
 
 //OperatorSelect {
-//  Select Vars Semicolon
+//  SELECT VARs SEMICOLON
 //}
 
 //OperatorSort {
-//  Sort VarOrder (Comma VarOrder)* Semicolon
+//  SORT VAROrder (COMMA VAROrder)* SEMICOLON
 //}
 
 //OperatorOffset {
-//  Offset IntegerLiteral Semicolon
+//  OFFSET INTEGERLITERAL SEMICOLON
 //}
 
 //OperatorLimit {
-//  Limit IntegerLiteral Semicolon
+//  LIMIT INTEGERLITERAL SEMICOLON
 //}
 
 //OperatorRequire {
-//  Require Vars Semicolon
+//  REQUIRE VARs SEMICOLON
 //}
 
 //OperatorDistinct {
-//  Distinct Semicolon
+//  DISTINCT SEMICOLON
 //}
 
 //OperatorReduce {
-//  Reduce ReduceAssign (Comma ReduceAssign)* (Groupby Vars)? Semicolon
+//  REDUCE ReduceAssign (COMMA ReduceAssign)* (GROUPBY VARs)? SEMICOLON
 //}
 
 // Stage arguments
-//VarOrder {
-//  Var Order?
+//VAROrder {
+//  VAR ORDER?
 //}
 
 //ReduceAssign {
-//  (ReduceAssignmentVar Assign Reducer)
+//  (ReduceAssignmentVAR ASSIGN Reducer)
 //}
 
-//ReduceAssignmentVar {
-//  VarOptional | Var
+//ReduceAssignmentVAR {
+//  VAROptional | VAR
 //}
 
 //Reducer {
-//  Count (ParenOpen Var ParenClose)? |
-//  Max ParenOpen Var ParenClose |
-//  Min ParenOpen Var ParenClose |
-//  Mean ParenOpen Var ParenClose |
-//  Median ParenOpen Var ParenClose |
-//  Std ParenOpen Var ParenClose |
-//  Sum ParenOpen Var ParenClose |
-//  List ParenOpen Var ParenClose
+//  COUNT (PARENOPEN VAR PARENCLOSE)? |
+//  MAX PARENOPEN VAR PARENCLOSE |
+//  MIN PARENOPEN VAR PARENCLOSE |
+//  MEAN PARENOPEN VAR PARENCLOSE |
+//  MEDIAN PARENOPEN VAR PARENCLOSE |
+//  STD PARENOPEN VAR PARENCLOSE |
+//  SUM PARENOPEN VAR PARENCLOSE |
+//  LIST PARENOPEN VAR PARENCLOSE
 //}
   
 // Patterns
 Patterns {
-  (Pattern Semicolon)+
+  (Pattern SEMICOLON)+
 }
 
 Pattern {
@@ -129,30 +130,80 @@ Pattern {
 }
 
 PatternConjunction {
-  CurlyOpen Patterns CurlyClose
+  CURLYOPEN Patterns CURLYCLOSE
 }
 
 PatternDisjunction {
-  CurlyOpen Patterns CurlyClose (Or CurlyOpen Patterns CurlyClose)+
+  CURLYOPEN Patterns CURLYCLOSE (OR CURLYOPEN Patterns CURLYCLOSE)+
 }
 
 PatternNegation {
-  Not CurlyOpen Patterns CurlyClose
+  NOT CURLYOPEN Patterns CURLYCLOSE
 }
 
 PatternTry {
- Try CurlyOpen Patterns CurlyClose
+ TRY CURLYOPEN Patterns CURLYCLOSE
+}
+
+StatementDeletable {
+  HAS? VAR OF VAR |
+  LINKS? Relation OF VAR |
+  VAR
+}
+
+StatementType {
+  KIND TypeRef (TypeConstraint (COMMA TypeConstraint)* COMMA?)?
+}
+
+TypeConstraint {
+  TypeConstraintBase // Annotations?
+}
+
+TypeConstraintBase {
+  SubConstraint |
+  ValueTypeConstraint |
+  LabelConstraint |
+  OwnsConstraint |
+  RelatesConstraint |
+  PlaysConstraint
+}
+
+SubConstraint {
+  SUB TypeRef
+}
+
+ValueTypeConstraint {
+  VALUEKEYWORD ValueType
+}
+
+LabelConstraint {
+  LABELKEYWORD LABEL // (LabelScoped | LABEL)
+}
+
+
+OwnsConstraint {
+  OWNS TypeRef
+  // | OWNS TypeRefList
+}
+
+RelatesConstraint {
+  RELATES TypeRef (AS TypeRef)?
+  // | RELATES TypeRefList (AS TypeRefList)?
+}
+
+PlaysConstraint {
+  PLAYS TypeRef
 }
 
 Statement {
   // StatementSingle |
-  // StatementType |
+  StatementType |
   StatementThing
 }
 
 StatementThing {
-  Var Comma? ThingConstraintList
-  // ThingRelationAnonymous (Comma? ThingConstraintList)?
+  VAR COMMA? ThingConstraintList
+  // ThingRelationAnonymous (COMMA? ThingConstraintList)?
 }
 
 // ThingRelationAnonymous {
@@ -160,136 +211,167 @@ StatementThing {
 // }
 
 ThingConstraintList {
-  ThingConstraint (Comma ThingConstraint)* Comma?
+  ThingConstraint (COMMA ThingConstraint)* COMMA?
 }
 
 ThingConstraint {
   IsaConstraint |
-  // IidConstraint |
+  IidConstraint |
   HasConstraint |
   LinksConstraint
 }
 
 IsaConstraint {
-  Isa TypeRef
-  // Isa TypeRef  (Relation | Expression | ValueLiteral | ExpressionStruct | Comparison)?
+  ISA TypeRef
+  // ISA TypeRef  (Relation | Expression | ValueLiteral | ExpressionStruct | Comparison)?
 }
 
 IidConstraint {
-  Iid IidValue
+  IID IID_VALUE
 }
 
 HasConstraint {
-  Has TypeRef Var |
-  Has TypeRef ValueLiteral |
-  Has Var
+  HAS TypeRef VAR |
+  HAS TypeRef ValueLiteral |
+  HAS VAR
 }
 
 LinksConstraint {
-  Links Relation
+  LINKS Relation
 }
 
 Relation {
-  ParenOpen RolePlayer (Comma RolePlayer)* Comma? ParenClose
+  PARENOPEN RolePlayer (COMMA RolePlayer)* COMMA? PARENCLOSE
 }
 
 RolePlayer {
-  // TypeRefList Colon Var |
-  TypeRef Colon Var |
-  Var
+  // TypeRefList COLON VAR |
+  TypeRef COLON VAR |
+  VAR
 }
 
 // TypeRefList {
-//   TypeRef SqBracketOpen SqBracketClose
+//   TypeRef SQBRACKETOPEN SQBRACKETCLOSE
 // }
 
 TypeRef {
   // LabelScoped |
-  Label |
-  Var
+  LABEL |
+  VAR
 }
 
 // LabelScoped {
-//   Label Colon Label
+//   LABEL COLON LABEL
 // }
 
 
 ValueLiteral {
-  StringLiteral |
-  IntegerLiteral
+  STRINGLITERAL |
+  INTEGERLITERAL
   // TODO
 }
 
+ValueType {
+  BOOLEAN |
+  INTEGER |
+  DOUBLE |
+  DECIMAL |
+  DATETIMETZ |
+  DATETIME |
+  DATE |
+  DURATION |
+  STRING
+}
 
 @tokens {
-  Var { Dollar $[a-zA-Z_\-0-9]+ }
-  Label { $[a-zA-Z_\-0-9]+ }
-  Dollar { "$" }
+  VAR { DOLLAR $[a-zA-Z_\-0-9]+ }
+  LABEL { $[a-zA-Z_\-0-9]+ }
+  DOLLAR { "$" }
 
-  // With { "with" }
-  Match { "match" }
-  // Insert { "insert" }
-  // Put { "put" }
-  // Update { "update" }
-  // Delete { "delete" }
-  // Select { "select" }
-  // Sort { "sort" }
-  // Offset { "offset" }
-  // Limit { "limit" }np
-  // Require { "require" }
-  // Distinct { "distinct" }
-  // Reduce { "reduce" }
-  // Groupby { "groupby" }
-  // Count { "count" }
-  End { "end" }
+  // WITH { "with" }
+  MATCH { "match" }
+  INSERT { "insert" }
+  PUT { "put" }
+  UPDATE { "update" }
+  DELETE { "delete" }
+  // SELECT { "select" }
+  // SORT { "sort" }
+  // OFFSET { "offset" }
+  // LIMIT { "limit" }
+  // REQUIRE { "require" }
+  // DISTINCT { "distinct" }
+  // REDUCE { "reduce" }
+  // GROUPBY { "groupby" }
+  // COUNT { "count" }
+  END { "end" }
 
-  // Max { "max" }
-  // Min { "min" }
-  // Mean { "mean" }
-  // Median { "median" }
-  // Std { "std" }
-  // Sum { "sum" }
-  // List { "list" }
-  // Order { AscendingOrder | DescendingOrder }
-  // AscendingOrder { "asc" }
-  // DescendingOrder { "desc" }
-  // Assign { "=" }
+  // MAX { "max" }
+  // MIN { "min" }
+  // MEAN { "mean" }
+  // MEDIAN { "median" }
+  // STD { "std" }
+  // SUM { "sum" }
+  // LIST { "list" }
+  // ORDER { ASCENDINGORDER | DESCENDINGORDER }
+  // ASCENDINGORDER { "asc" }
+  // DESCENDINGORDER { "desc" }
+  // ASSIGN { "=" }
   
   // Patterns
-  Or { "or" }
-  Not { "not" }
-  Try { "try" }
+  OR { "or" }
+  NOT { "not" }
+  TRY { "try" }
   
   // Statements
-  Has { "has" }
-  Isa { "isa" }
-  Links { "links" }
-  Iid { "iid" }
+  HAS { "has" }
+  ISA { "isa" }
+  LINKS { "links" }
+  IID { "iid" }
 
-  // LabelConstraint { "label" }
-  // Owns { "owns" }
-  // Relates { "relates" }
-  // Plays { "plays" }
+  SUB { "sub" }
+  VALUEKEYWORD { "value" }
+  LABELKEYWORD { "label" }
+  OWNS { "owns" }
+  RELATES { "relates" }
+  PLAYS { "plays" }
 
+  KIND { "kind" }
+
+  OF { "of" }
+  AS { "as" }
+  // FROM { "from" }
+
+  // ValueTypes 
+  BOOLEAN { "boolean" }
+  INTEGER { "integer" }
+  DOUBLE { "double" }
+  DECIMAL { "decimal" }
+  DATETIMETZ { "datetime-tz" }
+  DATETIME { "datetime" }
+  DATE { "date" }
+  DURATION { "duration" }
+  STRING { "string" }
   
   
   // Punctuation
-  Semicolon { ";" }
-  Comma { "," }
-  Colon { ":" }
-  ParenOpen { "(" }
-  ParenClose { ")" }
-  CurlyOpen { "{" }
-  CurlyClose { "}" }
-  // SqBracketOpen { "[" }
-  // SqBracketClose { "]" }
+  SEMICOLON { ";" }
+  COMMA { "," }
+  COLON { ":" }
+  PARENOPEN { "(" }
+  PARENCLOSE { ")" }
+  CURLYOPEN { "{" }
+  CURLYCLOSE { "}" }
+  // SQBRACKETOPEN { "[" }
+  // SQBRACKETCLOSE { "]" }
 
-  //@precedence { AscendingOrder, DescendingOrder }
+  //@precedence { ASCENDINGORDER, DESCENDINGORDER }
 
   // Literals
-  StringLiteral { '"' (!["\\] | "\\" _)* '"' }
-  IntegerLiteral { "-"? $[0-9]+ }
+  IID_VALUE { "0x" $[0-9a-fA-F]+ }
+
+  STRINGLITERAL { '"' (!["\\] | "\\" _)* '"' }
+  INTEGERLITERAL { "-"? $[0-9]+ }
   
-  LineComment { "#" ![\n]* }
-  Whitespace { $[ \t\n\r]+ }
+  linecomment { "#" ![\n]* }
+  whitespace { $[ \t\n\r]+ }
 }

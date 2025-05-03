@@ -17,31 +17,36 @@ export const TypeQLLanguage = LRLanguage.define({
       }),
       styleTags({
         // See: https://lezer.codemirror.net/docs/ref/#highlight.tags
-
-        Var: t.variableName,
-
+      
+        VAR: t.variableName,
+      
         // Literals
-        StringLiteral: t.string,
-        
+        STRINGLITERAL: t.string,
         
         // Types
-        Label: t.typeName,
+        LABEL: t.typeName,
         
         // Keywords
-        Isa: t.keyword,
-        Has: t.keyword,
-        Links: t.keyword,
-
+        ISA: t.keyword,
+        HAS: t.keyword,
+        LINKS: t.keyword,
+        OWNS: t.keyword,
+        RELATES: t.keyword,
+        PLAYS: t.keyword,
+      
         // Stages
-        Match: t.heading1,
-        
-        // // SubPattern
-        Or: t.controlOperator,
-        Not: t.controlOperator,
-        Try: t.controlOperator,
-
+        MATCH: t.heading1,
+        INSERT: t.heading1,
+        DELETE: t.heading1,
+        UPDATE: t.heading1,
+      
+        // SubPattern
+        OR: t.controlOperator,
+        NOT: t.controlOperator,
+        TRY: t.controlOperator,
+      
         // Misc
-        LineComment: t.lineComment,
+        LINECOMMENT: t.lineComment,
       })
     ]
   }),
