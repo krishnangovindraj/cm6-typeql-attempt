@@ -1,10 +1,237 @@
-@top QueryPipeline { Pipeline }
+@top Query { ((QuerySchema | QueryPipelinePreambled) END SEMICOLON)+ }
 @skip { whitespace | linecomment }
 
+// Schema
+QuerySchema {
+  QueryDefine |
+  QueryUndefine |
+  QueryRedefine
+}
 
-//QueryPipelinePreambled {
+QueryDefine {
+  DEFINE Definables
+}
+
+QueryUndefine {
+  UNDEFINE Undefinables
+}
+
+QueryRedefine {
+  REDEFINE Redefinables
+}
+
+Definables {
+  (Definable SEMICOLON)+
+}
+
+Definable {
+  DefinitionType |
+  // DefinitionFunction |
+  DefinitionStruct
+}
+
+Undefinables {
+  (Undefinable SEMICOLON)+
+}
+
+Undefinable {
+  UndefineFrom |
+  // UndefineFunction |
+  UndefineStruct |
+  KIND LABEL
+}
+
+Redefinables {
+  (Redefinable SEMICOLON)+
+}
+
+Redefinable {
+  RedefinableType //| DefinitionFunction
+}
+
+RedefinableType {
+  KIND? LABEL ((Annotations | TypeCapability) (COMMA TypeCapability)* COMMA?)?
+}
+
+DefinitionType {
+  KIND? LABEL COMMA? ((Annotations | TypeCapability) (COMMA TypeCapability)* COMMA?)?
+}
+
+TypeCapability {
+  TypeCapabilityBase Annotations?
+}
+
+TypeCapabilityBase {
+  SubDeclaration |
+  ValueTypeDeclaration |
+  // AliasDeclaration |
+  OwnsDeclaration |
+  PlaysDeclaration |
+  RelatesDeclaration
+}
+
+SubDeclaration {
+  SUB LABEL
+}
+
+ValueTypeDeclaration {
+  VALUEKEYWORD ValueType
+}
+
+// AliasDeclaration {
+//   ALIAS LABEL
+// }
+
+OwnsDeclaration {
+  OWNS LABEL |
+  OWNS LabelList
+}
+
+PlaysDeclaration {
+  PLAYS LABEL // | PLAYS LabelScoped
+}
+
+RelatesDeclaration {
+  RELATES LABEL (AS LABEL)? |
+  RELATES LabelList (AS LabelList)?
+}
+
+// DefinitionFunction {
+//   FUN FunctionSignature COLON FunctionBlock
+// }
+
+// FunctionSignature {
+//   IDENTIFIER PARENOPEN FunctionArguments? PARENCLOSE ARROW FunctionOutput
+// }
+
+// FunctionArguments {
+//   (FunctionArgument (COMMA FunctionArgument)* COMMA?)?
+// }
+
+// FunctionArgument {
+//   VAR COLON NamedTypeAny
+// }
+
+// FunctionBlock {
+//   QueryStage+ ReturnStatement
+// }
+
+// ReturnStatement {
+//   (ReturnStream | ReturnSingle | ReturnReduce) SEMICOLON
+// }
+
+DefinitionStruct {
+  STRUCT IDENTIFIER COLON DefinitionStructFields SEMICOLON
+}
+
+DefinitionStructFields {
+  DefinitionStructField (COMMA DefinitionStructField)* COMMA?
+}
+
+DefinitionStructField {
+  IDENTIFIER VALUEKEYWORD StructFieldValueType
+}
+
+StructFieldValueType {
+  ValueTypeOptional | ValueType
+}
+
+ValueTypeOptional {
+  ValueType QUESTIONMARK
+}
+
+
+UndefineFrom {
+  UndefineAnnotationFromCapability |
+  UndefineAnnotationFromType |
+  UndefineCapability |
+  UndefineSpecialise
+}
+
+UndefineAnnotationFromCapability {
+  AnnotationCategory FROM LABEL TypeCapabilityBase
+}
+
+UndefineAnnotationFromType {
+  AnnotationCategory FROM LABEL
+}
+
+UndefineCapability {
+  TypeCapabilityBase FROM LABEL
+}
+
+UndefineSpecialise {
+  AS LABEL FROM LABEL RelatesDeclaration
+}
+
+// UndefineFunction {
+//   FUN IDENTIFIER
+// }
+
+UndefineStruct {
+  STRUCT IDENTIFIER
+}
+
+LabelList { LABEL SQBRACKETOPEN SQBRACKETCLOSE }
+// NamedTypeAny { NamedTypeList | NamedType | ValueType }
+// NamedTypeList { NamedType SQBRACKETOPEN SQBRACKETCLOSE }
+// NamedType { LABEL | ValueType }
+
+// Annotations
+AnnotationCategory { 
+  ANNOTATION_ABSTRACT
+  | ANNOTATION_CARD
+  | ANNOTATION_CASCADE
+  | ANNOTATION_DISTINCT
+  | ANNOTATION_INDEPENDENT
+  | ANNOTATION_KEY
+  | ANNOTATION_RANGE
+  | ANNOTATION_REGEX
+  | ANNOTATION_SUBKEY
+  | ANNOTATION_UNIQUE
+  | ANNOTATION_VALUES
+}
+
+
+Annotations {
+  Annotation+
+}
+
+Annotation {
+  ANNOTATION_ABSTRACT |
+  ANNOTATION_CASCADE |
+  ANNOTATION_DISTINCT |
+  ANNOTATION_INDEPENDENT |
+  ANNOTATION_KEY |
+  ANNOTATION_UNIQUE |
+  ANNOTATION_CARD PARENOPEN Cardinality PARENCLOSE |
+  ANNOTATION_RANGE PARENOPEN Range PARENCLOSE |
+  ANNOTATION_REGEX PARENOPEN STRINGLITERAL PARENCLOSE |
+  ANNOTATION_SUBKEY PARENOPEN IDENTIFIER PARENCLOSE |
+  ANNOTATION_VALUES PARENOPEN ValueLiteral (COMMA ValueLiteral)* COMMA? PARENCLOSE
+}
+
+Cardinality {
+  INTEGERLITERAL DOUBLE_DOT INTEGERLITERAL? |
+  INTEGERLITERAL
+}
+
+Range {
+  RangeBound DOUBLE_DOT RangeBound |
+  RangeBound DOUBLE_DOT |
+  DOUBLE_DOT RangeBound
+}
+
+RangeBound {
+  ValueLiteral
+}
+
+
+// Pipelines
+QueryPipelinePreambled {
+  Pipeline
 //  Preamble* Pipeline
-//}
+}
 
 //Pipeline {
 //  QueryStage+ QueryStageTerminal?
@@ -16,21 +243,23 @@
 //}
 
 Pipeline {
-  QueryStage+ END SEMICOLON
+  QueryStage+ 
 }
 QueryStage {
   ClauseMatch |
   ClauseInsert |
   ClausePut |
   ClauseUpdate |
-  ClauseDelete // |
-  // OperatorStream
+  ClauseDelete |
+  OperatorStream
 }
 
 //QueryStageTerminal {
 //  ClauseFetch SEMICOLON
 //}
 
+
+// 
 // Stages
 ClauseMatch {
   MATCH Patterns
@@ -54,67 +283,67 @@ ClauseDelete {
  DELETE (StatementDeletable SEMICOLON)+
 }
 
-// OperatorStream {
-//  OperatorSelect |
-//  OperatorSort |
-//  OperatorDistinct |
-//  OperatorOffset |
-//  OperatorLimit |
-//  OperatorRequire |
-//  OperatorReduce
-// }
+OperatorStream {
+ OperatorSelect |
+ OperatorSort |
+ OperatorDistinct |
+ OperatorOffset |
+ OperatorLimit |
+ OperatorRequire |
+ OperatorReduce
+}
 
-//OperatorSelect {
-//  SELECT VARs SEMICOLON
-//}
+OperatorSelect {
+ SELECT Vars SEMICOLON
+}
 
-//OperatorSort {
-//  SORT VAROrder (COMMA VAROrder)* SEMICOLON
-//}
+OperatorSort {
+ SORT VAROrder (COMMA VAROrder)* SEMICOLON
+}
 
-//OperatorOffset {
-//  OFFSET INTEGERLITERAL SEMICOLON
-//}
+OperatorOffset {
+ OFFSET INTEGERLITERAL SEMICOLON
+}
 
-//OperatorLimit {
-//  LIMIT INTEGERLITERAL SEMICOLON
-//}
+OperatorLimit {
+ LIMIT INTEGERLITERAL SEMICOLON
+}
 
-//OperatorRequire {
-//  REQUIRE VARs SEMICOLON
-//}
+OperatorRequire {
+ REQUIRE Vars SEMICOLON
+}
 
-//OperatorDistinct {
-//  DISTINCT SEMICOLON
-//}
+OperatorDistinct {
+ DISTINCT SEMICOLON
+}
 
-//OperatorReduce {
-//  REDUCE ReduceAssign (COMMA ReduceAssign)* (GROUPBY VARs)? SEMICOLON
-//}
+OperatorReduce {
+ REDUCE ReduceAssign (COMMA ReduceAssign)* (GROUPBY Vars)? SEMICOLON
+}
 
 // Stage arguments
-//VAROrder {
-//  VAR ORDER?
-//}
+Vars {
+  VAR (COMMA VAR)* COMMA?
+}
 
-//ReduceAssign {
-//  (ReduceAssignmentVAR ASSIGN Reducer)
-//}
+VAROrder {
+ VAR ORDER?
+}
 
-//ReduceAssignmentVAR {
-//  VAROptional | VAR
-//}
+ReduceAssign {
+ (VAR ASSIGN Reducer)
+}
 
-//Reducer {
-//  COUNT (PARENOPEN VAR PARENCLOSE)? |
-//  MAX PARENOPEN VAR PARENCLOSE |
-//  MIN PARENOPEN VAR PARENCLOSE |
-//  MEAN PARENOPEN VAR PARENCLOSE |
-//  MEDIAN PARENOPEN VAR PARENCLOSE |
-//  STD PARENOPEN VAR PARENCLOSE |
-//  SUM PARENOPEN VAR PARENCLOSE |
-//  LIST PARENOPEN VAR PARENCLOSE
-//}
+Reducer {
+ COUNT (PARENOPEN VAR PARENCLOSE)? |
+ MAX PARENOPEN VAR PARENCLOSE |
+ MIN PARENOPEN VAR PARENCLOSE |
+ MEAN PARENOPEN VAR PARENCLOSE |
+ MEDIAN PARENOPEN VAR PARENCLOSE |
+ STD PARENOPEN VAR PARENCLOSE |
+ SUM PARENOPEN VAR PARENCLOSE |
+ LIST PARENOPEN VAR PARENCLOSE
+}
   
 // Patterns
 Patterns {
@@ -182,13 +411,13 @@ LabelConstraint {
 
 
 OwnsConstraint {
-  OWNS TypeRef
-  // | OWNS TypeRefList
+  OWNS TypeRef |
+   OWNS TypeRefList
 }
 
 RelatesConstraint {
-  RELATES TypeRef (AS TypeRef)?
-  // | RELATES TypeRefList (AS TypeRefList)?
+  RELATES TypeRef (AS TypeRef)? |
+  RELATES TypeRefList (AS TypeRefList)?
 }
 
 PlaysConstraint {
@@ -245,14 +474,14 @@ Relation {
 }
 
 RolePlayer {
-  // TypeRefList COLON VAR |
+  TypeRefList COLON VAR |
   TypeRef COLON VAR |
   VAR
 }
 
-// TypeRefList {
-//   TypeRef SQBRACKETOPEN SQBRACKETCLOSE
-// }
+TypeRefList {
+  TypeRef SQBRACKETOPEN SQBRACKETCLOSE
+}
 
 TypeRef {
   // LabelScoped |
@@ -283,10 +512,32 @@ ValueType {
   STRING
 }
 
+IDENTIFIER { LABEL }
+
 @tokens {
   VAR { DOLLAR $[a-zA-Z_\-0-9]+ }
-  LABEL { $[a-zA-Z_\-0-9]+ }
+  // IDENTIFIER { $[a-zA-Z_\-0-9]+ } // Consider splitting this into Label and LabelScoped
+  LABEL { $[a-zA-Z_\-0-9]+ (':' $[a-zA-Z_\-0-9]+)?  } // Consider splitting this into Label and LabelScoped
   DOLLAR { "$" }
+
+  DISTINCT { "distinct" }
+  //
+  DEFINE { "define" }
+  UNDEFINE { "undefine" }
+  REDEFINE { "redefine" } 
+
+  ANNOTATION_ABSTRACT { "@abstract" }
+  ANNOTATION_CASCADE { "@cascade" }
+  ANNOTATION_DISTINCT { "@distinct" }
+  ANNOTATION_INDEPENDENT { "@independent" }
+  ANNOTATION_KEY { "@key" }
+  ANNOTATION_UNIQUE { "@unique" }
+  ANNOTATION_CARD { "@card" }
+  ANNOTATION_RANGE { "@range" }
+  ANNOTATION_REGEX { "@regex" }
+  ANNOTATION_SUBKEY { "@subkey" }
+  ANNOTATION_VALUES { "@values" }
+  
 
   // WITH { "with" }
   MATCH { "match" }
@@ -294,28 +545,29 @@ ValueType {
   PUT { "put" }
   UPDATE { "update" }
   DELETE { "delete" }
-  // SELECT { "select" }
-  // SORT { "sort" }
-  // OFFSET { "offset" }
-  // LIMIT { "limit" }
-  // REQUIRE { "require" }
-  // DISTINCT { "distinct" }
-  // REDUCE { "reduce" }
-  // GROUPBY { "groupby" }
-  // COUNT { "count" }
+  SELECT { "select" }
+  SORT { "sort" }
+  OFFSET { "offset" }
+  LIMIT { "limit" }
+  REQUIRE { "require" }
+  // DISTINCT is already covered
+  REDUCE { "reduce" }
+  GROUPBY { "groupby" }
+  
   END { "end" }
 
-  // MAX { "max" }
-  // MIN { "min" }
-  // MEAN { "mean" }
-  // MEDIAN { "median" }
-  // STD { "std" }
-  // SUM { "sum" }
-  // LIST { "list" }
-  // ORDER { ASCENDINGORDER | DESCENDINGORDER }
-  // ASCENDINGORDER { "asc" }
-  // DESCENDINGORDER { "desc" }
-  // ASSIGN { "=" }
+  COUNT { "count" }
+  MAX { "max" }
+  MIN { "min" }
+  MEAN { "mean" }
+  MEDIAN { "median" }
+  STD { "std" }
+  SUM { "sum" }
+  LIST { "list" }
+  ORDER { ASCENDINGORDER | DESCENDINGORDER }
+  ASCENDINGORDER { "asc" }
+  DESCENDINGORDER { "desc" }
+  ASSIGN { "=" }
   
   // Patterns
   OR { "or" }
@@ -335,11 +587,11 @@ ValueType {
   RELATES { "relates" }
   PLAYS { "plays" }
 
-  KIND { "kind" }
+  KIND { "entity" | "relation" | "attribute" }
 
   OF { "of" }
   AS { "as" }
-  // FROM { "from" }
+  FROM { "from" }
 
   // ValueTypes 
   BOOLEAN { "boolean" }
@@ -351,7 +603,11 @@ ValueType {
   DATE { "date" }
   DURATION { "duration" }
   STRING { "string" }
-  
+
+  // Functions & structs
+  // FUN { "fun" }
+  // ARROW { "->" }
+  STRUCT { "struct" }
   
   // Punctuation
   SEMICOLON { ";" }
@@ -361,10 +617,13 @@ ValueType {
   PARENCLOSE { ")" }
   CURLYOPEN { "{" }
   CURLYCLOSE { "}" }
-  // SQBRACKETOPEN { "[" }
-  // SQBRACKETCLOSE { "]" }
+  SQBRACKETOPEN { "[" }
+  SQBRACKETCLOSE { "]" }
+  DOUBLE_DOT { ".." }
+  QUESTIONMARK { "?" }
 
   //@precedence { ASCENDINGORDER, DESCENDINGORDER }
+  @precedence { END, KIND, STRUCT, LABEL } // This causes some weird parses sometimes.
 
   // Literals
   IID_VALUE { "0x" $[0-9a-fA-F]+ }

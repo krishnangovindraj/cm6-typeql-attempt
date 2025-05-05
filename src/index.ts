@@ -35,10 +35,24 @@ export const TypeQLLanguage = LRLanguage.define({
         PLAYS: t.keyword,
       
         // Stages
+        DEFINE: t.heading1,
+        UNDEFINE: t.heading1,
+        REDEFINE: t.heading1,
+
         MATCH: t.heading1,
         INSERT: t.heading1,
         DELETE: t.heading1,
         UPDATE: t.heading1,
+        PUT: t.heading1,
+        
+        SELECT: t.heading1,
+        REDUCE: t.heading1,
+        SORT: t.heading1,
+        OFFSET: t.heading1,
+        LIMIT: t.heading1,
+        REQUIRE: t.heading1,
+        DISTINCT: t.heading1,
+        GROUPBY: t.heading1,
       
         // SubPattern
         OR: t.controlOperator,
@@ -46,6 +60,7 @@ export const TypeQLLanguage = LRLanguage.define({
         TRY: t.controlOperator,
       
         // Misc
+        Annotation: t.meta,
         LINECOMMENT: t.lineComment,
       })
     ]
