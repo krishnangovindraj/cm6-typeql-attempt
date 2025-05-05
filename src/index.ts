@@ -5,6 +5,7 @@ import {styleTags, tags as t} from "@lezer/highlight"
 import { Diagnostic } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 import {linter} from '@codemirror/lint'
+import {autocompleteTypeQL} from "./complete"
 
 export const TypeQLLanguage = LRLanguage.define({
   parser: parser.configure({
@@ -72,7 +73,11 @@ export const TypeQLLanguage = LRLanguage.define({
 
 
 export function TypeQL() {
-  return new LanguageSupport(TypeQLLanguage)
+  return new LanguageSupport(TypeQLLanguage, [
+      TypeQLLanguage.data.of({
+        autocomplete: autocompleteTypeQL 
+      }),
+    ])
 }
 
 // A Linter which flags syntax errors from: https://discuss.codemirror.net/t/showing-syntax-errors/3111/6
