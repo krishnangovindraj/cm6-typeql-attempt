@@ -430,8 +430,7 @@ ThingConstraint {
 }
 
 IsaConstraint {
-  ISA TypeRef
-  // ISA TypeRef  (Relation | Expression | ValueLiteral | ExpressionStruct | Comparison)?
+  ISA TypeRef  (Expression | Comparison)? // | ExpressionStruct // | ValueLiteral is subsumed by Expression // | Relation is ambiguous with paranthesis expressions
 }
 
 IidConstraint {
@@ -493,6 +492,13 @@ ValueType {
   STRING
 }
 
+Comparison {
+  ComparisonOperator Expression
+}
+
+ComparisonOperator {
+  EQUAL | NOT_EQUAL | GREATER | GREATER_EQUAL | LESS | LESS_EQUAL | LIKE | CONTAINS
+}
 
 // Function
 IDENTIFIER { LABEL } // hack
@@ -736,11 +742,21 @@ ExpressionParenthesis {
   PLUS { "+" }
   MINUS { "-" }
 
+  // Comparison operators
+  EQUAL { "==" }
+  NOT_EQUAL { "!=" }
+  GREATER { ">" }
+  GREATER_EQUAL { ">=" }
+  LESS { "<" }
+  LESS_EQUAL { "<=" }
+  LIKE { "like" }
+  CONTAINS { "contains" }
+
   //@precedence { ASCENDINGORDER, DESCENDINGORDER }
   @precedence { 
-    END, KIND, STRUCT, 
-    FUN, BOOLEAN, INTEGER, STRING, DURATION, DOUBLE, DECIMAL, DATETIME, DATETIMETZ, DATE, 
-    BOOLEANLITERAL,
+    END, KIND, STRUCT, FUN, 
+    BOOLEAN, INTEGER, STRING, DURATION, DOUBLE, DECIMAL, DATETIME, DATETIMETZ, DATE, 
+    BOOLEANLITERAL, LIKE, CONTAINS,
     LABEL } // This causes some weird parses sometimes.
 
   // Literals
@@ -751,8 +767,6 @@ ExpressionParenthesis {
   INTEGERLITERAL { "-"? $[0-9]+ }
   DOUBLELITERAL { "-"? $[0-9]+('.' $[0-9]+)?  }
   @precedence { DOUBLELITERAL, INTEGERLITERAL }
-  
-
   
   linecomment { "#" ![\n]* }
   whitespace { $[ \t\n\r]+ }
