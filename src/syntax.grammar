@@ -365,7 +365,7 @@ StatementDeletable {
 }
 
 StatementType {
-  KIND TypeRef (TypeConstraint (COMMA TypeConstraint)* COMMA?)?
+  KIND? TypeRef (TypeConstraint (COMMA TypeConstraint)* COMMA?)?
 }
 
 TypeConstraint {
@@ -761,9 +761,10 @@ ExpressionParenthesis {
 
   //@precedence { ASCENDINGORDER, DESCENDINGORDER }
   @precedence { 
-    END, KIND, STRUCT, FUN, 
+    END, KIND, STRUCT, LET, FUN, RETURN,
     BOOLEAN, INTEGER, STRING, DURATION, DOUBLE, DECIMAL, DATETIME, DATETIMETZ, DATE, 
     BOOLEANLITERAL, LIKE, CONTAINS,
+    NOT, TRY, DELETE, DISTINCT, MATCH, INSERT, PUT, UPDATE, SELECT, SORT, OFFSET, LIMIT, REQUIRE, REDUCE, 
     LABEL } // This causes some weird parses sometimes.
 
   // Literals
