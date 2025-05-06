@@ -1,5 +1,10 @@
-@top Query { ((QuerySchema | QueryPipelinePreambled) END SEMICOLON)+ }
+@top Query { QueryEither (END SEMICOLON QueryEither)* (END SEMICOLON)? }
 @skip { whitespace | linecomment }
+
+QueryEither {
+  QuerySchema |
+  QueryPipelinePreambled
+}
 
 // Schema
 QuerySchema {
