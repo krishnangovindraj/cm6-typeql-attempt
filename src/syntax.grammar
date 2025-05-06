@@ -26,7 +26,7 @@ Definables {
 
 Definable {
   DefinitionType |
-  // DefinitionFunction |
+  DefinitionFunction |
   DefinitionStruct
 }
 
@@ -46,7 +46,7 @@ Redefinables {
 }
 
 Redefinable {
-  RedefinableType //| DefinitionFunction
+  RedefinableType | DefinitionFunction
 }
 
 RedefinableType {
@@ -96,29 +96,6 @@ RelatesDeclaration {
   RELATES LabelList (AS LabelList)?
 }
 
-// DefinitionFunction {
-//   FUN FunctionSignature COLON FunctionBlock
-// }
-
-// FunctionSignature {
-//   IDENTIFIER PARENOPEN FunctionArguments? PARENCLOSE ARROW FunctionOutput
-// }
-
-// FunctionArguments {
-//   (FunctionArgument (COMMA FunctionArgument)* COMMA?)?
-// }
-
-// FunctionArgument {
-//   VAR COLON NamedTypeAny
-// }
-
-// FunctionBlock {
-//   QueryStage+ ReturnStatement
-// }
-
-// ReturnStatement {
-//   (ReturnStream | ReturnSingle | ReturnReduce) SEMICOLON
-// }
 
 DefinitionStruct {
   STRUCT IDENTIFIER COLON DefinitionStructFields SEMICOLON
@@ -173,9 +150,9 @@ UndefineStruct {
 }
 
 LabelList { LABEL SQBRACKETOPEN SQBRACKETCLOSE }
-// NamedTypeAny { NamedTypeList | NamedType | ValueType }
-// NamedTypeList { NamedType SQBRACKETOPEN SQBRACKETCLOSE }
-// NamedType { LABEL | ValueType }
+NamedTypeAny { NamedTypeList | NamedType }
+NamedTypeList { NamedType SQBRACKETOPEN SQBRACKETCLOSE }
+NamedType { LABEL | ValueType }
 
 // Annotations
 AnnotationCategory { 
@@ -385,7 +362,7 @@ StatementType {
 }
 
 TypeConstraint {
-  TypeConstraintBase // Annotations?
+  TypeConstraintBase Annotations?
 }
 
 TypeConstraintBase {
@@ -425,10 +402,12 @@ PlaysConstraint {
 }
 
 Statement {
+  StatementAssignment |
   // StatementSingle |
   StatementType |
   StatementThing
 }
+
 
 StatementThing {
   VAR COMMA? ThingConstraintList
@@ -495,8 +474,10 @@ TypeRef {
 
 
 ValueLiteral {
+  BOOLEANLITERAL |
   STRINGLITERAL |
-  INTEGERLITERAL
+  INTEGERLITERAL |
+  DOUBLELITERAL
   // TODO
 }
 
@@ -512,12 +493,130 @@ ValueType {
   STRING
 }
 
-IDENTIFIER { LABEL }
+
+// Function
+IDENTIFIER { LABEL } // hack
+
+DefinitionFunction {
+  FUN FunctionSignature COLON FunctionBlock
+}
+
+FunctionSignature {
+  IDENTIFIER PARENOPEN FunctionArguments? PARENCLOSE ARROW FunctionOutput
+}
+
+
+FunctionArguments {
+  FunctionArgument (COMMA FunctionArgument)* COMMA?
+}
+
+FunctionArgument {
+  VAR COLON NamedTypeAny
+}
+
+FunctionOutput {
+  FunctionOutputStream |
+  FunctionOutputSingle
+}
+
+FunctionOutputStream {
+  CURLYOPEN NamedTypeAny (COMMA NamedTypeAny)* COMMA? CURLYCLOSE
+}
+
+FunctionOutputSingle {
+  NamedTypeAny (COMMA NamedTypeAny)* COMMA?
+}
+
+FunctionBlock {
+  QueryStage+ ReturnStatement
+}
+
+ReturnStatement {
+  RETURN  (ReturnStream | ReturnSingle | ReturnReduce) SEMICOLON
+}
+
+ReturnStream {
+  CURLYOPEN Vars CURLYCLOSE
+}
+
+ReturnSingle {
+  ReturnSingleSelector Vars
+}
+
+ReturnSingleSelector {
+  FIRST | LAST
+}
+
+ReturnReduce {
+  Reducer (COMMA Reducer)* COMMA?
+}
+
+// Assignment
+StatementAssignment {
+  LET AssignmentLeft (ASSIGN | IN) Expression
+}
+
+AssignmentLeft {
+  VarsAssignment // | StructDestructor
+}
+
+VarsAssignment {
+  VarAssignment (COMMA VarAssignment)* COMMA?
+}
+
+VarAssignment {
+  VAR QUESTIONMARK?
+}
+
+// StructDestructor {
+//   CURLYOPEN StructKey COLON StructDestructorValue CURLYCLOSE
+// }
+
+// // StructDestructorValue {
+// //   VAR | StructDestructor
+// // }
+
+//  Expression
+Expression {
+  ExpressionValue (ExpressionOperator ExpressionValue)*
+}
+
+ExpressionValue {
+  // ExpressionListIndex |
+  ExpressionParenthesis |
+  FunctionCall |
+  ValueLiteral |
+  VAR
+}
+
+FunctionCall {
+  FunctionName PARENOPEN FunctionCallArguments? PARENCLOSE
+}
+
+FunctionName {
+  IDENTIFIER
+}
+
+FunctionCallArguments {
+  Expression (COMMA Expression)* COMMA?
+}
+ExpressionOperator {
+  POWER | TIMES | DIVIDE | MODULO | PLUS | MINUS
+}
+
+ExpressionParenthesis {
+  PARENOPEN Expression PARENCLOSE
+}
+
+// ExpressionListIndex {
+//   VAR SQBRACKETOPEN Expression SQBRACKETCLOSE
+// }
+
 
 @tokens {
   VAR { DOLLAR $[a-zA-Z_\-0-9]+ }
   // IDENTIFIER { $[a-zA-Z_\-0-9]+ } // Consider splitting this into Label and LabelScoped
-  LABEL { $[a-zA-Z_\-0-9]+ (':' $[a-zA-Z_\-0-9]+)?  } // Consider splitting this into Label and LabelScoped
+  LABEL { $[a-zA-Z] $[a-zA-Z_\-0-9]+ (':' $[a-zA-Z_\-0-9]+)?  } // Consider splitting this into Label and LabelScoped
   DOLLAR { "$" }
 
   DISTINCT { "distinct" }
@@ -567,7 +666,7 @@ IDENTIFIER { LABEL }
   ORDER { ASCENDINGORDER | DESCENDINGORDER }
   ASCENDINGORDER { "asc" }
   DESCENDINGORDER { "desc" }
-  ASSIGN { "=" }
+
   
   // Patterns
   OR { "or" }
@@ -605,10 +704,14 @@ IDENTIFIER { LABEL }
   STRING { "string" }
 
   // Functions & structs
-  // FUN { "fun" }
-  // ARROW { "->" }
+  FUN { "fun" }
+  ARROW { "->" }
   STRUCT { "struct" }
-  
+  RETURN { "return" }
+
+  FIRST { "first" }
+  LAST { "last" }
+
   // Punctuation
   SEMICOLON { ";" }
   COMMA { "," }
@@ -621,15 +724,35 @@ IDENTIFIER { LABEL }
   SQBRACKETCLOSE { "]" }
   DOUBLE_DOT { ".." }
   QUESTIONMARK { "?" }
+  
+  // Expression operators
+  LET { "let" }
+  ASSIGN { "=" }
+  IN { "in" }
+  POWER { "^" }
+  TIMES { "*" }
+  DIVIDE { "/" }
+  MODULO { "%" }
+  PLUS { "+" }
+  MINUS { "-" }
 
   //@precedence { ASCENDINGORDER, DESCENDINGORDER }
-  @precedence { END, KIND, STRUCT, LABEL } // This causes some weird parses sometimes.
+  @precedence { 
+    END, KIND, STRUCT, 
+    FUN, BOOLEAN, INTEGER, STRING, DURATION, DOUBLE, DECIMAL, DATETIME, DATETIMETZ, DATE, 
+    BOOLEANLITERAL,
+    LABEL } // This causes some weird parses sometimes.
 
   // Literals
   IID_VALUE { "0x" $[0-9a-fA-F]+ }
 
+  BOOLEANLITERAL { "false" | "true" }
   STRINGLITERAL { '"' (!["\\] | "\\" _)* '"' }
   INTEGERLITERAL { "-"? $[0-9]+ }
+  DOUBLELITERAL { "-"? $[0-9]+('.' $[0-9]+)?  }
+  @precedence { DOUBLELITERAL, INTEGERLITERAL }
+  
+
   
   linecomment { "#" ![\n]* }
   whitespace { $[ \t\n\r]+ }

@@ -71,7 +71,7 @@ export function autocompleteTypeQL(context: CompletionContext):  CompletionResul
         if (keywordSuggestions!= null) {
             options = keywordSuggestions;
         }
-    }
+    } 
 
     if (options != null) {
         // And once we figure out, we have to create a list of completion objects
