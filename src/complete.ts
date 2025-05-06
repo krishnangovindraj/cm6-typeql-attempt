@@ -2,7 +2,8 @@ import { CompletionContext,  Completion, CompletionResult } from "@codemirror/au
 import {syntaxTree} from "@codemirror/language"
 import {SyntaxNode, Tree} from "@lezer/common"
 
-
+// TODO: We could do better by climbing up the tree using `atNode.parentNode` to predict based on position as well.
+// We could also refine the suggestions by creating datastructures based on the declarations in the schema, rather than blindly suggesting every label.
 function suggestLabel(label: string): Completion {
     return {
         label: label,
