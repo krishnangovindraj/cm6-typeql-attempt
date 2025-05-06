@@ -98,7 +98,7 @@ RelatesDeclaration {
 
 
 DefinitionStruct {
-  STRUCT IDENTIFIER COLON DefinitionStructFields SEMICOLON
+  STRUCT IDENTIFIER COLON DefinitionStructFields
 }
 
 DefinitionStructFields {
@@ -532,7 +532,7 @@ FunctionBlock {
 }
 
 ReturnStatement {
-  RETURN  (ReturnStream | ReturnSingle | ReturnReduce) SEMICOLON
+  RETURN  (ReturnStream | ReturnSingle | ReturnReduce)
 }
 
 ReturnStream {

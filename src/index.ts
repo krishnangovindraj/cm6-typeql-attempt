@@ -23,9 +23,23 @@ export const TypeQLLanguage = LRLanguage.define({
       
         // Literals
         STRINGLITERAL: t.string,
-        
+        INTEGERLITERAL: t.number,
+        DOUBLELITERAL: t.number,
+        BOOLEANLITERAL: t.bool,
+
         // Types
         LABEL: t.typeName,
+
+        BOOLEAN: t.typeName,
+        INTEGER: t.typeName,
+        DOUBLE: t.typeName,
+        DECIMAL: t.typeName,
+        DATETIMETZ: t.typeName,
+        DATETIME: t.typeName,
+        DATE: t.typeName,
+        DURATION: t.typeName,
+        STRING: t.typeName,
+          
         
         // Keywords
         ISA: t.keyword,
@@ -34,6 +48,13 @@ export const TypeQLLanguage = LRLanguage.define({
         OWNS: t.keyword,
         RELATES: t.keyword,
         PLAYS: t.keyword,
+
+        FUN: t.keyword,
+        LET: t.keyword,
+        FIRST: t.keyword,
+        LAST: t.keyword,
+        
+        // Value type names?
       
         // Stages
         DEFINE: t.heading1,
@@ -45,6 +66,7 @@ export const TypeQLLanguage = LRLanguage.define({
         DELETE: t.heading1,
         UPDATE: t.heading1,
         PUT: t.heading1,
+        END: t.heading1,
         
         SELECT: t.heading1,
         REDUCE: t.heading1,
