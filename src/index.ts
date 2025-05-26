@@ -1,27 +1,27 @@
 
-import {parser} from "./syntax.grammar"
-import {LRLanguage, LanguageSupport, indentNodeProp, foldNodeProp, foldInside, delimitedIndent, syntaxTree} from "@codemirror/language"
-import {styleTags, tags as t} from "@lezer/highlight"
+import { parser } from "./syntax.grammar"
+import { LRLanguage, LanguageSupport, indentNodeProp, foldNodeProp, foldInside, delimitedIndent, syntaxTree } from "@codemirror/language"
+import { styleTags, tags as t } from "@lezer/highlight"
 import { Diagnostic } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
-import {linter} from '@codemirror/lint'
+import { linter } from '@codemirror/lint'
 import { autocompletion } from "@codemirror/autocomplete";
-import {autocompleteTypeQL} from "./complete"
+import { autocompleteTypeQL } from "./complete"
 
 export const TypeQLLanguage = LRLanguage.define({
   parser: parser.configure({
     props: [
       indentNodeProp.add({
-        
+
       }),
       foldNodeProp.add({
         QueryStage: foldInside
       }),
       styleTags({
         // See: https://lezer.codemirror.net/docs/ref/#highlight.tags
-      
+
         VAR: t.variableName,
-      
+
         // Literals
         STRINGLITERAL: t.string,
         INTEGERLITERAL: t.number,
@@ -40,8 +40,8 @@ export const TypeQLLanguage = LRLanguage.define({
         DATE: t.typeName,
         DURATION: t.typeName,
         STRING: t.typeName,
-          
-        
+
+
         // Keywords
         ISA: t.keyword,
         HAS: t.keyword,
@@ -54,9 +54,9 @@ export const TypeQLLanguage = LRLanguage.define({
         LET: t.keyword,
         FIRST: t.keyword,
         LAST: t.keyword,
-        
+
         // Value type names?
-      
+
         // Stages
         DEFINE: t.heading1,
         UNDEFINE: t.heading1,
@@ -68,7 +68,7 @@ export const TypeQLLanguage = LRLanguage.define({
         UPDATE: t.heading1,
         PUT: t.heading1,
         END: t.heading1,
-        
+
         SELECT: t.heading1,
         REDUCE: t.heading1,
         SORT: t.heading1,
@@ -77,12 +77,12 @@ export const TypeQLLanguage = LRLanguage.define({
         REQUIRE: t.heading1,
         DISTINCT: t.heading1,
         GROUPBY: t.heading1,
-      
+
         // SubPattern
         OR: t.controlOperator,
         NOT: t.controlOperator,
         TRY: t.controlOperator,
-      
+
         // Misc
         Annotation: t.meta,
         LINECOMMENT: t.lineComment,
@@ -90,7 +90,7 @@ export const TypeQLLanguage = LRLanguage.define({
     ]
   }),
   languageData: {
-    commentTokens: {line: "#"}
+    commentTokens: { line: "#" }
   }
 })
 
@@ -101,7 +101,7 @@ export function TypeQL() {
 
 
 export function typeqlAutocompleteExtension() {
-    return autocompletion({activateOnTypingDelay: 100, override: [autocompleteTypeQL]});
+  return autocompletion({ activateOnTypingDelay: 100, override: [autocompleteTypeQL] });
 }
 
 // A Linter which flags syntax errors from: https://discuss.codemirror.net/t/showing-syntax-errors/3111/6
