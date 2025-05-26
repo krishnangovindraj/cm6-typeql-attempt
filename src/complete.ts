@@ -1,7 +1,7 @@
 import { CompletionContext, Completion, CompletionResult } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language"
 import { SyntaxNode, NodeType, Tree } from "@lezer/common"
-import * as tokens from "./generated/syntax.grammar.generated.terms";
+import * as tokens from "./generated/typeql.grammar.generated.terms";
 
 function suggest(type: string, label: string, boost: number = 0): Completion {
     // type (docs): used to pick an icon to show for the completion. Icons are styled with a CSS class created by appending the type name to "cm-completionIcon-".

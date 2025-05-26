@@ -1,5 +1,5 @@
 
-import { parser } from "./syntax.grammar"
+import { parser } from "./typeql.grammar"
 import { LRLanguage, LanguageSupport, indentNodeProp, foldNodeProp, foldInside, delimitedIndent, syntaxTree } from "@codemirror/language"
 import { styleTags, tags as t } from "@lezer/highlight"
 import { Diagnostic } from "@codemirror/lint";
