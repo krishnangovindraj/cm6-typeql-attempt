@@ -1,7 +1,9 @@
 
 import {basicSetup} from "codemirror"
-import {EditorView} from "@codemirror/view"
-import {TypeQL, otherExampleLinter} from "./dist/index.js";
+import {EditorView,  keymap} from "@codemirror/view"
+import {TypeQL, otherExampleLinter, typeqlAutocompleteExtension} from "./dist/index.js";
+import {defaultKeymap} from "@codemirror/commands"
+import {startCompletion} from "@codemirror/autocomplete"
 
 const view = new EditorView({
   doc: "match $x isa person; { $x has name $name; } or { $r links (friend: $x); }; end;\n\n" + 
@@ -11,5 +13,14 @@ const view = new EditorView({
   "return first $y;\n" +
   "end;" ,
   parent: document.body,
-  extensions: [basicSetup, TypeQL(), otherExampleLinter()]
+  extensions: [
+    basicSetup,
+    TypeQL(),
+    typeqlAutocompleteExtension(),
+    otherExampleLinter(),
+    keymap.of([
+      ...defaultKeymap,
+      {key: "Alt-Space", run: startCompletion, preventDefault: true},
+    ]),
+  ]
 })
