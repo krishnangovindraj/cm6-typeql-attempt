@@ -1,7 +1,7 @@
 import { CompletionContext, Completion, CompletionResult } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language"
-import { SyntaxNode, Tree } from "@lezer/common"
-
+import { SyntaxNode, NodeType, Tree } from "@lezer/common"
+import * as tokens from "./generated/syntax.grammar.generated.terms";
 
 function suggest(type: string, label: string, boost: number = 0): Completion {
     // type (docs): used to pick an icon to show for the completion. Icons are styled with a CSS class created by appending the type name to "cm-completionIcon-".
@@ -53,9 +53,9 @@ export function autocompleteTypeQL(context: CompletionContext): CompletionResult
 }
 
 function getSuggestions(context: CompletionContext, tree: Tree, parseAt: SyntaxNode): Completion[] | null {
-    switch (parseAt.name) {
-        case "LABEL": return suggestLabels(context, tree);
-        case "VAR": return suggestVariables(context, tree);
+    switch (parseAt.type.id) {
+        case tokens.LABEL: return suggestLabels(context, tree);
+        case tokens.VAR: return suggestVariables(context, tree);
         default: {
             return climbTillWeRecogniseSomething(context, tree, parseAt, parseAt, collectPrecedingChildrenOf(context, parseAt));
         }
@@ -63,30 +63,30 @@ function getSuggestions(context: CompletionContext, tree: Tree, parseAt: SyntaxN
 }
 
 
-function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode | null, prefix: string[]): Completion[] | null {
+function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode | null, prefix: NodeType[]): Completion[] | null {
     if (climbedTo == null) {
         return null;
     }
 
-    switch (climbedTo.name) {
-        case "Statement": {
+    switch (climbedTo.type.id) {
+        case tokens.Statement: {
             return suggestStatement(context, tree, parseAt, climbedTo, prefix);
         }
-        case "ClauseInsert":
-        case "ClausePut":
-        case "ClauseUpdate": {  // Ideally not update
-            if (["INSERT", "UPDATE", "PUT"].includes(prefix.at(-1) ?? "")) {
+        case tokens.ClauseInsert:
+        case tokens.ClausePut:
+        case tokens.ClauseUpdate: {  // Ideally not update
+            if ([tokens.INSERT, tokens.UPDATE, tokens.PUT].includes(prefix.at(-1)?.id ?? -1)) {
                 return suggestVariables(context, tree)
             } else {
                 return suggestStatementThing(context, tree, parseAt, climbedTo, prefix);
             }
         }
-        case "ClauseMatch":
-        case "Patterns": {
-            let goodPrefixes = ["SEMICOLON", "MATCH"];
-            if (prefix.length == 0 || goodPrefixes.includes(prefix.at(-1)!)) {
+        case tokens.ClauseMatch:
+        case tokens.Patterns: {
+            let goodPrefixes = [tokens.SEMICOLON, tokens.MATCH];
+            if (prefix.length == 0 || goodPrefixes.includes(prefix.at(-1)?.id ?? -1)) {
                 let ret = suggestNestedPatterns(context, tree, parseAt, climbedTo, prefix).concat(suggestVariables(context, tree));
-                if (prefix.length > 0 && prefix.at(-1)! == "SEMICOLON") {
+                if (prefix.length > 0 && prefix.at(-1)?.id == tokens.SEMICOLON) {
                     let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
                     ret = ret.concat(climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix) ?? []);
                 }
@@ -95,8 +95,8 @@ function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, p
                 return null;
             }
         }
-        case "Query": {
-            if (prefix.length == 0 || prefix.at(-1) == "SEMICOLON") {
+        case tokens.Query: {
+            if (prefix.length == 0 || prefix.at(-1)?.id == tokens.SEMICOLON) {
                 return suggestPipelineStages(context, tree, parseAt, climbedTo, prefix)
                     .concat(suggestDefinedKeywords(context, tree, parseAt, climbedTo, prefix));
             } else {
@@ -110,27 +110,27 @@ function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, p
     }
 }
 
-function collectSiblingsOf(node: SyntaxNode): string[] {
+function collectSiblingsOf(node: SyntaxNode): NodeType[] {
     let siblings = [];
     let prev: SyntaxNode | null = node;
     while (null != (prev = prev.prevSibling)) {
-        siblings.push(prev.name);
+        siblings.push(prev.type);
     };
     return siblings.reverse();
 }
 
-function collectPrecedingChildrenOf(context: CompletionContext, node: SyntaxNode): string[] {
+function collectPrecedingChildrenOf(context: CompletionContext, node: SyntaxNode): NodeType[] {
     let lastChild = node.childBefore(context.pos);
     if (lastChild == null) {
         return [];
     }
     let precedingChildren = collectSiblingsOf(lastChild);
-    precedingChildren.push(lastChild.name);
+    precedingChildren.push(lastChild.type);
     return precedingChildren;
 }
 
 
-function logInterestingStuff(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode | null, prefix: string[]) {
+function logInterestingStuff(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode | null, prefix: NodeType[]) {
     console.log("Current Node:", parseAt.name);
     console.log("ClimbedTo Node:", climbedTo?.name);
 
@@ -142,7 +142,8 @@ function logInterestingStuff(context: CompletionContext, tree: Tree, parseAt: Sy
     }
     climbThrough.push(at?.name);
     console.log("Climbed through", climbThrough);
-    console.log("Siblings:", prefix);
+
+    console.log("Prefix:", prefix);
 }
 
 // The actual suggestions
@@ -152,7 +153,7 @@ function suggestLabels(context: CompletionContext, tree: Tree): Completion[] {
     var options: Completion[] = [];
     tree.iterate({
         enter: (other: SyntaxNode) => {
-            if (other.name == "LABEL") {
+            if (other.type.id == tokens.LABEL) {
                 let label = context.state.sliceDoc(other.from, other.to);
                 options.push(suggest("type", label));
             }
@@ -166,7 +167,7 @@ function suggestVariables(context: CompletionContext, tree: Tree): Completion[] 
     var options: Completion[] = [];
     tree.iterate({
         enter: (other: SyntaxNode) => {
-            if (other.name == "VAR") {
+            if (other.type.id == tokens.VAR) {
                 let varName = context.state.sliceDoc(other.from, other.to);
                 options.push(suggest("variable", varName, -10));
             }
@@ -197,75 +198,75 @@ function suggestTypeConstraintKeywords(): Completion[] {
     });
 }
 
-function suggestDefinedKeywords(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: string[]): Completion[] {
+function suggestDefinedKeywords(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
     return ["define", "redefine", "undefine"].map((keyword) => suggest("keyword", keyword, 1));
 }
 
-function suggestPipelineStages(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: string[]): Completion[] {
+function suggestPipelineStages(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
     return ["match", "insert", "delete", "update", "put", "select", "reduce", "sort", "limit", "offset", "end"].map((keyword) => suggest("keyword", keyword, 1))
 }
 
-function suggestNestedPatterns(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: string[]): Completion[] {
+function suggestNestedPatterns(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
     return ["not {};", "{} or {};", "try {};"].map((keyword) => suggest("method", keyword, 1));
 }
 
-function suggestStatement(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, statementNode: SyntaxNode, prefix: string[]): Completion[] | null {
+function suggestStatement(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, statementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
     let refinedStatementNode = statementNode.childBefore(context.pos)!;
     return suggestStatementRefinedImpl(context, tree, parseAt, refinedStatementNode, prefix);
 }
 
-function suggestStatementRefinedImpl(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: string[]): Completion[] | null {
+function suggestStatementRefinedImpl(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
     if (refinedStatementNode?.name == "StatementAssignment") {
         return null;
-    } else if (prefix.at(-1) == "VAR") {
+    } else if (prefix.at(-1)?.id == tokens.VAR) {
         // We can't trust whether it's a type or thing yet.
         return suggestThingConstraintKeywords().concat(suggestTypeConstraintKeywords());
     }
 
-    switch (refinedStatementNode.name) {
-        case "StatementType": {
+    switch (refinedStatementNode.type.id) {
+        case tokens.StatementType: {
             return suggestStatementType(context, tree, parseAt, refinedStatementNode, prefix);
         }
-        case "StatementThing": {
+        case tokens.StatementThing: {
             return suggestStatementThing(context, tree, parseAt, refinedStatementNode, prefix);
 
         }
-        case "StatementAssignment": return null;
+        case tokens.StatementAssignment: return null;
     }
 
     return null;
 }
 
-function suggestStatementThing(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: string[]): Completion[] | null {
-    switch (prefix.at(-1)) {
-        case "ISA":
-        case "HAS": {
+function suggestStatementThing(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
+    switch (prefix.at(-1)?.id) {
+        case tokens.ISA:
+        case tokens.HAS: {
             return suggestLabels(context, tree).concat(suggestVariables(context, tree));
         }
-        case "VAR":
-        case "COMMA": return suggestThingConstraintKeywords();
-        case "LINKS":
+        case tokens.VAR:
+        case tokens.COMMA: return suggestThingConstraintKeywords();
+        case tokens.LINKS:
         default: {
             return null;
         }
     }
 }
 
-function suggestStatementType(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: string[]): Completion[] | null {
-    switch (prefix.at(-1)) {
-        case "SUB":
-        case "OWNS": {
+function suggestStatementType(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
+    switch (prefix.at(-1)?.id) {
+        case tokens.SUB:
+        case tokens.OWNS: {
             return suggestLabels(context, tree).concat(suggestVariables(context, tree));
         }
-        case "RELATES":
-        case "PLAYS": {
+        case tokens.RELATES:
+        case tokens.PLAYS: {
             return null; // TODO: Suggest roles
         }
-        case "VAR":
-        case "COMMA": {
+        case tokens.VAR:
+        case tokens.COMMA: {
             return suggestTypeConstraintKeywords();
         }
-        case "links":
+        case tokens.LINKS:
         default: {
             return null;
         }

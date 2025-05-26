@@ -4,6 +4,7 @@
   "description": "typeql language support for CodeMirror",
   "scripts": {
     "test": "mocha test/test.js",
+    "generate-grammar": "lezer-generator --typeScript src/syntax.grammar -o src/generated/syntax.grammar.generated",
     "prepare": "rollup -c",
     "bundle": "rollup index.ts -f iife -o editor.bundle.js -p @rollup/plugin-node-resolve"
   },
@@ -25,7 +26,7 @@
     "codemirror": "^6.0.1"
   },
   "devDependencies": {
-    "@lezer/generator": "^1.0.0",
+    "@lezer/generator": "^1.7.3",
     "mocha": "^9.0.1",
     "rollup": "^2.79.2",
     "rollup-plugin-dts": "^4.0.1",
