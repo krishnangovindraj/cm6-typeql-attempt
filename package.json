@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "description": "typeql language support for CodeMirror",
   "scripts": {
+    "grammar2base64": "echo \"export const grammarb64 = \\\"$(cat src/typeql.grammar | base64)\\\";\" > src/generated/grammarb64.ts ",
     "test": "mocha test/test.js",
-    "generate-grammar": "lezer-generator --typeScript src/syntax.grammar -o src/generated/syntax.grammar.generated",
+    "generate-grammar": "lezer-generator --typeScript src/typeql.grammar -o src/generated/typeql.grammar.generated",
     "prepare": "rollup -c",
     "bundle": "rollup index.ts -f iife -o editor.bundle.js -p @rollup/plugin-node-resolve"
   },
@@ -21,6 +22,7 @@
     "@codemirror/lang-javascript": "^6.2.3",
     "@codemirror/language": "^6.0.0",
     "@lezer/highlight": "^1.0.0",
+    "@lezer/lezer": "^1.1.2",
     "@lezer/lr": "^1.0.0",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "codemirror": "^6.0.1"

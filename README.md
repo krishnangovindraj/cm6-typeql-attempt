@@ -8,7 +8,7 @@ Things you'll need to do (see the [language support example](https://codemirror.
 ### Rather, things I'm doing:
  * Done: ~~`git grep EXAMPLE` and replace all instances with your language name.~~ .
 
- * Minimally Done: Rewrite the grammar in `src/syntax.grammar` to cover your language. See the [Lezer system guide](https://lezer.codemirror.net/docs/guide/#writing-a-grammar) for information on this file format. 
+ * Minimally Done: Rewrite the grammar in `src/typeql.grammar` to cover your language. See the [Lezer system guide](https://lezer.codemirror.net/docs/guide/#writing-a-grammar) for information on this file format. 
     - Using some AI is a great starting point. Our grammar is incredibly complicated and it might be ok to gloss over some details that we don't intend to unpack yet (Like treating ALL annotations as `@<word>(<not-a-paren-close>)` )
 
  * Adjust the metadata in `src/index.ts` to work with your new grammar.
