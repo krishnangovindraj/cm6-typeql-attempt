@@ -1,7 +1,7 @@
 
 import {basicSetup} from "codemirror"
 import {EditorView,  keymap} from "@codemirror/view"
-import {TypeQL, otherExampleLinter, typeqlAutocompleteExtension, parseTheTypeQLGrammarFile, otherParser} from "./dist/index.js";
+import {TypeQL, otherExampleLinter, typeqlAutocompleteExtension, parseTheTypeQLGrammarFile} from "./dist/index.js";
 import {defaultKeymap} from "@codemirror/commands"
 import {startCompletion} from "@codemirror/autocomplete"
 
@@ -27,5 +27,3 @@ const view = new EditorView({
 })
 
 window.parseTheTypeQLGrammarFile = parseTheTypeQLGrammarFile;
-
-// window.otherParser = otherParser;
