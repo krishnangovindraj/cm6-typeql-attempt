@@ -2,13 +2,28 @@ import { CompletionContext,  Completion, CompletionResult } from "@codemirror/au
 import {syntaxTree} from "@codemirror/language"
 import {SyntaxNode, Tree} from "@lezer/common"
 
-function suggest(type: string, label: string): Completion {
+function suggest(type: string, label: string, boost: number = 0): Completion {
     return {
         label: label,
         type: type,
         apply: label,
         info: type,
+        boost: boost, 
     };
+}
+
+function isPartOfWord(s: string): boolean {
+    let matches = s.match(/^[A-Za-z0-9_\-\$]+/);
+    return matches != null && matches.length > 0;
+}
+
+function findStartOfCompletion(context: CompletionContext): number {
+    let str = context.state.doc.sliceString(0, context.pos);
+    let at = context.pos-1;
+    while (at >= 0 && isPartOfWord(str.charAt(at))) {
+        at -= 1;
+    }
+    return at ;
 }
 
 function collectLabelSuggestions(context: CompletionContext, tree: Tree) : Completion[] {    
@@ -33,7 +48,7 @@ function collectVariableSuggestions(context: CompletionContext, tree: Tree) : Co
         enter: (other: SyntaxNode) => {
             if (other.name == "VAR") {
                 let varName = context.state.sliceDoc(other.from, other.to);
-                options.push(suggest("variable", varName));
+                options.push(suggest("variable", varName, -10));
             }
         }
     });
@@ -46,13 +61,15 @@ function collectVariableSuggestions(context: CompletionContext, tree: Tree) : Co
 export function autocompleteTypeQL(context: CompletionContext):  CompletionResult | null {
     let tree: Tree = syntaxTree(context.state);
     let currentNode: SyntaxNode = tree.resolveInner(context.pos, -1); // https://lezer.codemirror.net/docs/ref/#common.SyntaxNode
+    
     let options = getSuggestions(context, tree, currentNode);
     if (options != null) {
         // And once we figure out, we have to create a list of completion objects
         // It may be worth changing the grammar to be able to do this more easily, rather than replicate the original TypeQL grammar.
         // https://codemirror.net/docs/ref/#autocomplete.Completion
+        let from = findStartOfCompletion(context) + 1;
         return {
-            from: context.pos,
+            from: from,
             options: options,
             // Docs: "regular expression that tells the extension that, as long as the updated input (the range between the result's from property and the completion point) matches that value, it can continue to use the list of completions."
             validFor: /^(\w+)?$/
@@ -125,20 +142,35 @@ function logInterestingStuff(context: CompletionContext, tree: Tree, parseAt: Sy
     console.log("Siblings:", prefix);
 }
 
+function suggestThingConstraintKeywords(): Completion[] {
+    return ["isa", "has", "links"].map((constraintName) => {
+        return {
+            label: constraintName,
+            type: "thingConstraint",
+            apply: constraintName,
+            info: "Thing constraint keyword",
+        };
+    });
+}
+function suggestTypeConstraintKeywords(): Completion[] {
+    return ["sub", "owns", "relates", "plays"].map((constraintName) => {
+        return {
+            label: constraintName,
+            type: "typeConstraint",
+            apply: constraintName,
+            info: "Type constraint keyword",
+        };
+    });
+}
 
 // Actual suggestions
 function suggestStatement(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, statementNode: SyntaxNode, prefix: string[]) : Completion[] | null {
-    const thingConstraintNames = ["isa", "has", "links"];
-    const typeConstraintNames = ["sub", "owns", "relates", "plays"];
-
-    console.log("Suggesting statement", statementNode.childBefore(context.pos)?.name, "with immediate prefix", prefix.at(-1  ));
     let refinedStatementNode =  statementNode.childBefore(context.pos)!;
     if (refinedStatementNode?.name == "StatementAssignment") {
         return null;
-    }
-    else if (prefix.at(-1) == "VAR") {
+    } else if (prefix.at(-1) == "VAR") {
          // We can't trust whether it's a type or thing yet.
-        return thingConstraintNames.concat(typeConstraintNames).map((constraintName) => suggest("keywordConstraint", constraintName));
+        return suggestThingConstraintKeywords().concat(suggestTypeConstraintKeywords());
     }
     
     switch (refinedStatementNode.name) {
@@ -155,14 +187,7 @@ function suggestStatement(context: CompletionContext, tree: Tree, parseAt: Synta
 
                 case "VAR":
                 case "COMMA": {
-                    return ["SUB", "OWNS", "RELATES", "PLAYS"].map((constraintName) => { 
-                        return { 
-                            label: constraintName,
-                            type: "typeConstraint",
-                            apply: constraintName,
-                            info: "Type constraint keyword",
-                        };
-                    });
+                    return suggestTypeConstraintKeywords();
                 }
                 case "links":
                 default: return null;
@@ -175,16 +200,7 @@ function suggestStatement(context: CompletionContext, tree: Tree, parseAt: Synta
                     return collectLabelSuggestions(context, tree).concat(collectVariableSuggestions(context, tree));
                 }
                 case "VAR":
-                case "COMMA": {
-                    return ["isa", "has", "links"].map((constraintName) => { 
-                        return { 
-                            label: constraintName,
-                            type: "thingConstraint",
-                            apply: constraintName,
-                            info: "Thing constraint keyword",
-                        };
-                    });
-                }
+                case "COMMA": return suggestThingConstraintKeywords();
                 case "LINKS":
                 default: return null;
             }
