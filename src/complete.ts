@@ -67,6 +67,20 @@ function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, p
     if (climbedTo == null) {
         return null;
     }
+    let suggestionEither = SUGGESION_MAP[climbedTo.type.id];
+    if (suggestionEither != null) {
+        for (var sops of (suggestionEither as SuffixOfPrefixSuggestion[])) {
+            if (prefixHasSuffix(prefix, sops.suffix)) {
+                return sops.suggestions.map((f) => {
+                    f(context, tree, parseAt, climbedTo, prefix);
+                }).reduce((acc, curr) => { 
+                    return (curr == null) ? acc : acc.concat(curr);
+                }, []);
+            }
+        }
+        // None match? Fall through.
+        console.log("Fell through:", climbedTo.type.name, "with prefix", prefix);
+    }
 
     switch (climbedTo.type.id) {
         case tokens.Statement: {
@@ -129,6 +143,18 @@ function collectPrecedingChildrenOf(context: CompletionContext, node: SyntaxNode
     return precedingChildren;
 }
 
+function prefixHasSuffix(prefix: NodeType[], suffix: number[]): boolean {
+    if (prefix.length < suffix.length) {
+        return false;
+    }
+    for (let i = 0; i < suffix.length; i++) {
+        if (prefix[prefix.length - suffix.length + i].id != suffix[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 function logInterestingStuff(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode | null, prefix: NodeType[]) {
     console.log("Current Node:", parseAt.name);
@@ -147,6 +173,7 @@ function logInterestingStuff(context: CompletionContext, tree: Tree, parseAt: Sy
 }
 
 // The actual suggestions
+// TODO: See if we can make this declarative based on token sequences expected as prefixes of a given node.
 function suggestLabels(context: CompletionContext, tree: Tree): Completion[] {
     // TODO: We could do better by climbing up the tree using `atNode.parentNode` to predict based on position as well.
     // We could also refine the suggestions by creating datastructures based on the declarations in the schema, rather than blindly suggesting every label.
@@ -272,3 +299,22 @@ function suggestStatementType(context: CompletionContext, tree: Tree, parseAt: S
         }
     };
 }
+
+// Will pick the first matching suffix. If you want to handle things manually, use an empty suffix, duh.
+interface SuggestionMap { 
+    [key: number]: SuffixOfPrefixSuggestion[]
+};
+interface SuffixOfPrefixSuggestion {
+    suffix: number[],
+    suggestions: SuggestionFunction[]
+};
+
+type SuggestionFunction = (context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode, prefix: NodeType[]) => Completion[] | null;
+
+// Hopefully you only have to touch this.
+const SUGGESION_MAP: SuggestionMap = {
+    [tokens.StatementThing]: [
+        { suffix: [tokens.COMMA], suggestions: [suggestThingConstraintKeywords]},
+        { suffix: [tokens.VAR], suggestions: [suggestThingConstraintKeywords]},
+    ]
+};
