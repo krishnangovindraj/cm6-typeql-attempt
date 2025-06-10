@@ -65,63 +65,68 @@ function getSuggestions(context: CompletionContext, tree: Tree, parseAt: SyntaxN
 
 function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode | null, prefix: NodeType[]): Completion[] | null {
     if (climbedTo == null) {
+        logInterestingStuff(context, tree, parseAt, climbedTo, prefix);
         return null;
     }
     let suggestionEither = SUGGESION_MAP[climbedTo.type.id];
     if (suggestionEither != null) {
         for (var sops of (suggestionEither as SuffixOfPrefixSuggestion[])) {
-            if (prefixHasSuffix(prefix, sops.suffix)) {
-                return sops.suggestions.map((f) => {
-                    f(context, tree, parseAt, climbedTo, prefix);
+            if (prefixHasAnyOfSuffixes(prefix, sops.suffixes)) {
+                let suggestions = sops.suggestions.map((f) => {
+                    return f(context, tree, parseAt, climbedTo, prefix);
                 }).reduce((acc, curr) => { 
-                    return (curr == null) ? acc : acc.concat(curr);
+                    return (curr == null) ? acc : acc!.concat(curr);
                 }, []);
+                console.log("Matched:", climbedTo.type.name, "with prefix", prefix, ". Suggestions:", suggestions);
+                return suggestions;
             }
         }
         // None match? Fall through.
-        console.log("Fell through:", climbedTo.type.name, "with prefix", prefix);
+        console.log("Fell through!!!: ", climbedTo.type.name, "with prefix", prefix);
     }
+    let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
+    return climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix);
 
-    switch (climbedTo.type.id) {
-        case tokens.Statement: {
-            return suggestStatement(context, tree, parseAt, climbedTo, prefix);
-        }
-        case tokens.ClauseInsert:
-        case tokens.ClausePut:
-        case tokens.ClauseUpdate: {  // Ideally not update
-            if ([tokens.INSERT, tokens.UPDATE, tokens.PUT].includes(prefix.at(-1)?.id ?? -1)) {
-                return suggestVariables(context, tree)
-            } else {
-                return suggestStatementThing(context, tree, parseAt, climbedTo, prefix);
-            }
-        }
-        case tokens.ClauseMatch:
-        case tokens.Patterns: {
-            let goodPrefixes = [tokens.SEMICOLON, tokens.MATCH];
-            if (prefix.length == 0 || goodPrefixes.includes(prefix.at(-1)?.id ?? -1)) {
-                let ret = suggestNestedPatterns(context, tree, parseAt, climbedTo, prefix).concat(suggestVariables(context, tree));
-                if (prefix.length > 0 && prefix.at(-1)?.id == tokens.SEMICOLON) {
-                    let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
-                    ret = ret.concat(climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix) ?? []);
-                }
-                return ret;
-            } else {
-                return null;
-            }
-        }
-        case tokens.Query: {
-            if (prefix.length == 0 || prefix.at(-1)?.id == tokens.SEMICOLON) {
-                return suggestPipelineStages(context, tree, parseAt, climbedTo, prefix)
-                    .concat(suggestDefinedKeywords(context, tree, parseAt, climbedTo, prefix));
-            } else {
-                return null;
-            }
-        };
-        default: {
-            let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
-            return climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix);
-        }
-    }
+    // switch (climbedTo.type.id) {
+    //     case tokens.Statement: {
+    //         return suggestStatement(context, tree, parseAt, climbedTo, prefix);
+    //     }
+    //     case tokens.ClauseInsert:
+    //     case tokens.ClausePut:
+    //     case tokens.ClauseUpdate: {  // Ideally not update
+    //         if ([tokens.INSERT, tokens.UPDATE, tokens.PUT].includes(prefix.at(-1)?.id ?? -1)) {
+    //             return suggestVariables(context, tree)
+    //         } else {
+    //             return suggestStatementThing(context, tree, parseAt, climbedTo, prefix);
+    //         }
+    //     }
+    //     case tokens.ClauseMatch:
+    //     case tokens.Patterns: {
+    //         let goodPrefixes = [tokens.SEMICOLON, tokens.MATCH];
+    //         if (prefix.length == 0 || goodPrefixes.includes(prefix.at(-1)?.id ?? -1)) {
+    //             let ret = suggestNestedPatterns(context, tree, parseAt, climbedTo, prefix).concat(suggestVariables(context, tree));
+    //             if (prefix.length > 0 && prefix.at(-1)?.id == tokens.SEMICOLON) {
+    //                 let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
+    //                 ret = ret.concat(climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix) ?? []);
+    //             }
+    //             return ret;
+    //         } else {
+    //             return null;
+    //         }
+    //     }
+    //     case tokens.Query: {
+    //         if (prefix.length == 0 || prefix.at(-1)?.id == tokens.SEMICOLON) {
+    //             return suggestPipelineStages(context, tree, parseAt, climbedTo, prefix)
+    //                 .concat(suggestDefinedKeywords(context, tree, parseAt, climbedTo, prefix));
+    //         } else {
+    //             return null;
+    //         }
+    //     };
+    //     default: {
+    //         let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
+    //         return climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix);
+    //     }
+    // }
 }
 
 function collectSiblingsOf(node: SyntaxNode): NodeType[] {
@@ -141,6 +146,15 @@ function collectPrecedingChildrenOf(context: CompletionContext, node: SyntaxNode
     let precedingChildren = collectSiblingsOf(lastChild);
     precedingChildren.push(lastChild.type);
     return precedingChildren;
+}
+
+function prefixHasAnyOfSuffixes(prefix: NodeType[], suffixes: SuffixCandidate[]): boolean {
+    for (let i = 0; i < suffixes.length; i++) {
+        if (prefixHasSuffix(prefix, suffixes[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function prefixHasSuffix(prefix: NodeType[], suffix: number[]): boolean {
@@ -304,17 +318,23 @@ function suggestStatementType(context: CompletionContext, tree: Tree, parseAt: S
 interface SuggestionMap { 
     [key: number]: SuffixOfPrefixSuggestion[]
 };
+
+
+type SuffixCandidate = number[]; // A SuffixCandidate 's' "matches" a prefix if prefix[-s.length:] == s 
 interface SuffixOfPrefixSuggestion {
-    suffix: number[],
+    suffixes: SuffixCandidate[], // If any of the  suffix candidates match, the suggestions will be used.
     suggestions: SuggestionFunction[]
 };
 
 type SuggestionFunction = (context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode, prefix: NodeType[]) => Completion[] | null;
 
 // Hopefully you only have to touch this.
+
+const SUFFIX_VAR_OR_COMMA = [[tokens.COMMA], [tokens.VAR]];
+
 const SUGGESION_MAP: SuggestionMap = {
-    [tokens.StatementThing]: [
-        { suffix: [tokens.COMMA], suggestions: [suggestThingConstraintKeywords]},
-        { suffix: [tokens.VAR], suggestions: [suggestThingConstraintKeywords]},
+    [tokens.Statement]: [
+        { suffixes: SUFFIX_VAR_OR_COMMA, suggestions: [suggestThingConstraintKeywords]},
+        { suffixes: [[tokens.HAS]], suggestions: [suggestLabels, suggestVariables] },
     ]
 };
