@@ -1,12 +1,7 @@
-@top Query { QueryEither (END SEMICOLON QueryEither)* (END SEMICOLON)? }
-@skip { whitespace | linecomment }
-
 // TODO: This is a direct translation of the original pest grammar (which is PEG iirc)
 // It may be better to rewrite as much as possible so that it's better suited to the LR parser.
-QueryEither {
-  QuerySchema |
-  QueryPipelinePreambled
-}
+@top Query { QuerySchema | QueryPipelinePreambled (END SEMICOLON)? }
+@skip { whitespace | linecomment }
 
 // Schema
 QuerySchema {

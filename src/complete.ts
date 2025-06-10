@@ -45,7 +45,7 @@ export function autocompleteTypeQL(context: CompletionContext): CompletionResult
             from: from,
             options: options,
             // Docs: "regular expression that tells the extension that, as long as the updated input (the range between the result's from property and the completion point) matches that value, it can continue to use the list of completions."
-            validFor: /^(\w+)?$/
+            validFor: /^([\w\$]+)?$/
         }
     } else {
         return null;
@@ -62,6 +62,15 @@ function getSuggestions(context: CompletionContext, tree: Tree, parseAt: SyntaxN
     }
 }
 
+function combineSuggestions(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode, prefix: NodeType[], suggestionFunctions: SuggestionFunction[]): Completion[] {
+    let suggestions = suggestionFunctions.map((f) => {
+        return f(context, tree, parseAt, climbedTo, prefix);
+    }).reduce((acc, curr) => { 
+        return (curr == null) ? acc : acc!.concat(curr);
+    }, []);
+    console.log("Matched:", climbedTo.type.name, "with prefix", prefix, ". Suggestions:", suggestions);
+    return suggestions!;
+}
 
 function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, climbedTo: SyntaxNode | null, prefix: NodeType[]): Completion[] | null {
     if (climbedTo == null) {
@@ -72,13 +81,7 @@ function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, p
     if (suggestionEither != null) {
         for (var sops of (suggestionEither as SuffixOfPrefixSuggestion[])) {
             if (prefixHasAnyOfSuffixes(prefix, sops.suffixes)) {
-                let suggestions = sops.suggestions.map((f) => {
-                    return f(context, tree, parseAt, climbedTo, prefix);
-                }).reduce((acc, curr) => { 
-                    return (curr == null) ? acc : acc!.concat(curr);
-                }, []);
-                console.log("Matched:", climbedTo.type.name, "with prefix", prefix, ". Suggestions:", suggestions);
-                return suggestions;
+                return combineSuggestions(context, tree, parseAt, climbedTo, prefix, sops.suggestions);
             }
         }
         // None match? Fall through.
@@ -86,47 +89,6 @@ function climbTillWeRecogniseSomething(context: CompletionContext, tree: Tree, p
     }
     let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
     return climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix);
-
-    // switch (climbedTo.type.id) {
-    //     case tokens.Statement: {
-    //         return suggestStatement(context, tree, parseAt, climbedTo, prefix);
-    //     }
-    //     case tokens.ClauseInsert:
-    //     case tokens.ClausePut:
-    //     case tokens.ClauseUpdate: {  // Ideally not update
-    //         if ([tokens.INSERT, tokens.UPDATE, tokens.PUT].includes(prefix.at(-1)?.id ?? -1)) {
-    //             return suggestVariables(context, tree)
-    //         } else {
-    //             return suggestStatementThing(context, tree, parseAt, climbedTo, prefix);
-    //         }
-    //     }
-    //     case tokens.ClauseMatch:
-    //     case tokens.Patterns: {
-    //         let goodPrefixes = [tokens.SEMICOLON, tokens.MATCH];
-    //         if (prefix.length == 0 || goodPrefixes.includes(prefix.at(-1)?.id ?? -1)) {
-    //             let ret = suggestNestedPatterns(context, tree, parseAt, climbedTo, prefix).concat(suggestVariables(context, tree));
-    //             if (prefix.length > 0 && prefix.at(-1)?.id == tokens.SEMICOLON) {
-    //                 let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
-    //                 ret = ret.concat(climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix) ?? []);
-    //             }
-    //             return ret;
-    //         } else {
-    //             return null;
-    //         }
-    //     }
-    //     case tokens.Query: {
-    //         if (prefix.length == 0 || prefix.at(-1)?.id == tokens.SEMICOLON) {
-    //             return suggestPipelineStages(context, tree, parseAt, climbedTo, prefix)
-    //                 .concat(suggestDefinedKeywords(context, tree, parseAt, climbedTo, prefix));
-    //         } else {
-    //             return null;
-    //         }
-    //     };
-    //     default: {
-    //         let newPrefix = collectSiblingsOf(climbedTo).concat(prefix);
-    //         return climbTillWeRecogniseSomething(context, tree, parseAt, climbedTo.parent, newPrefix);
-    //     }
-    // }
 }
 
 function collectSiblingsOf(node: SyntaxNode): NodeType[] {
@@ -204,17 +166,25 @@ function suggestLabels(context: CompletionContext, tree: Tree): Completion[] {
 
 }
 
-function suggestVariables(context: CompletionContext, tree: Tree): Completion[] {
+function suggestVariables(context: CompletionContext, tree: Tree, boost=0): Completion[] {
     var options: Completion[] = [];
     tree.iterate({
         enter: (other: SyntaxNode) => {
             if (other.type.id == tokens.VAR) {
                 let varName = context.state.sliceDoc(other.from, other.to);
-                options.push(suggest("variable", varName, -10));
+                options.push(suggest("variable", varName, 0));
             }
         }
     });
     return options;
+}
+
+function suggestVariablesAt10(context: CompletionContext, tree: Tree): Completion[] {
+    return suggestVariables(context, tree, 10);
+}
+
+function suggestVariablesAtMinus10(context: CompletionContext, tree: Tree): Completion[] {
+    return suggestVariables(context, tree, -10);
 }
 
 
@@ -247,71 +217,12 @@ function suggestPipelineStages(context: CompletionContext, tree: Tree, parseAt: 
     return ["match", "insert", "delete", "update", "put", "select", "reduce", "sort", "limit", "offset", "end"].map((keyword) => suggest("keyword", keyword, 1))
 }
 
+function suggestKinds(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
+    return ["entity", "attribute", "relation"].map((keyword) => suggest("kind", keyword, 2));
+}
+
 function suggestNestedPatterns(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
-    return ["not {};", "{} or {};", "try {};"].map((keyword) => suggest("method", keyword, 1));
-}
-
-function suggestStatement(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, statementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
-    let refinedStatementNode = statementNode.childBefore(context.pos)!;
-    return suggestStatementRefinedImpl(context, tree, parseAt, refinedStatementNode, prefix);
-}
-
-function suggestStatementRefinedImpl(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
-    if (refinedStatementNode?.name == "StatementAssignment") {
-        return null;
-    } else if (prefix.at(-1)?.id == tokens.VAR) {
-        // We can't trust whether it's a type or thing yet.
-        return suggestThingConstraintKeywords().concat(suggestTypeConstraintKeywords());
-    }
-
-    switch (refinedStatementNode.type.id) {
-        case tokens.StatementType: {
-            return suggestStatementType(context, tree, parseAt, refinedStatementNode, prefix);
-        }
-        case tokens.StatementThing: {
-            return suggestStatementThing(context, tree, parseAt, refinedStatementNode, prefix);
-
-        }
-        case tokens.StatementAssignment: return null;
-    }
-
-    return null;
-}
-
-function suggestStatementThing(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
-    switch (prefix.at(-1)?.id) {
-        case tokens.ISA:
-        case tokens.HAS: {
-            return suggestLabels(context, tree).concat(suggestVariables(context, tree));
-        }
-        case tokens.VAR:
-        case tokens.COMMA: return suggestThingConstraintKeywords();
-        case tokens.LINKS:
-        default: {
-            return null;
-        }
-    }
-}
-
-function suggestStatementType(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, refinedStatementNode: SyntaxNode, prefix: NodeType[]): Completion[] | null {
-    switch (prefix.at(-1)?.id) {
-        case tokens.SUB:
-        case tokens.OWNS: {
-            return suggestLabels(context, tree).concat(suggestVariables(context, tree));
-        }
-        case tokens.RELATES:
-        case tokens.PLAYS: {
-            return null; // TODO: Suggest roles
-        }
-        case tokens.VAR:
-        case tokens.COMMA: {
-            return suggestTypeConstraintKeywords();
-        }
-        case tokens.LINKS:
-        default: {
-            return null;
-        }
-    };
+    return ["not {};", "{} or {};", "try {};"].map((keyword) => suggest("method", keyword, 2));
 }
 
 // Will pick the first matching suffix. If you want to handle things manually, use an empty suffix, duh.
@@ -332,9 +243,32 @@ type SuggestionFunction = (context: CompletionContext, tree: Tree, parseAt: Synt
 
 const SUFFIX_VAR_OR_COMMA = [[tokens.COMMA], [tokens.VAR]];
 
+
+
+const SUGGESTION_GROUP_FOR_THING_STATEMENTS: SuffixOfPrefixSuggestion[]  = [
+        { suffixes: SUFFIX_VAR_OR_COMMA, suggestions: [suggestThingConstraintKeywords] },
+        { suffixes: [[tokens.HAS], [tokens.ISA]], suggestions: [suggestLabels, suggestVariablesAtMinus10] },
+        { suffixes: [[tokens.HAS, tokens.TypeRef], [tokens.ISA, tokens.TypeRef]], suggestions: [suggestVariablesAtMinus10] },
+];
+
 const SUGGESION_MAP: SuggestionMap = {
     [tokens.Statement]: [
-        { suffixes: SUFFIX_VAR_OR_COMMA, suggestions: [suggestThingConstraintKeywords]},
-        { suffixes: [[tokens.HAS]], suggestions: [suggestLabels, suggestVariables] },
-    ]
+        { suffixes: SUFFIX_VAR_OR_COMMA, suggestions: [suggestThingConstraintKeywords, suggestTypeConstraintKeywords] },
+        { suffixes: [[tokens.HAS], [tokens.ISA]], suggestions: [suggestLabels, suggestVariablesAtMinus10] },
+        { suffixes: [[tokens.HAS, tokens.TypeRef], [tokens.ISA, tokens.TypeRef]], suggestions: [suggestVariablesAtMinus10] },
+        { suffixes: [[tokens.SEMICOLON, tokens.TypeRef]], suggestions: [suggestTypeConstraintKeywords] },
+        { suffixes: [[tokens.SUB], [tokens.OWNS]], suggestions: [suggestLabels, suggestVariablesAtMinus10] },
+        //   { suffixes: [[tokens.PLAYS], [tokens.RELATES]], suggestions: [suggestRoleLabels] }, // TODO: Role
+    ],
+    [tokens.ClauseMatch]: [
+        { suffixes: [[tokens.MATCH, tokens.TypeRef]], suggestions: [suggestTypeConstraintKeywords] },
+        { suffixes: [[tokens.MATCH]], suggestions: [suggestVariablesAt10, suggestLabels] },
+    ],
+    [tokens.ClauseInsert]: SUGGESTION_GROUP_FOR_THING_STATEMENTS,
+    [tokens.Query]: [
+        { suffixes: [[tokens.QuerySchema]], suggestions: [suggestLabels, suggestKinds] },
+        { suffixes: [[tokens.QueryPipelinePreambled]], suggestions: [suggestPipelineStages, suggestNestedPatterns, suggestVariablesAt10] },
+    ],
+    
+    // TODO: ...
 };
