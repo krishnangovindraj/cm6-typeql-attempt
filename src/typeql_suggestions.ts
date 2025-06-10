@@ -114,5 +114,15 @@ export const SUGGESTION_MAP: SuggestionMap = {
         { suffixes: [[tokens.QueryPipelinePreambled]], suggestions: [suggestPipelineStages, suggestNestedPatterns, suggestVariablesAt10] },
     ],
     
+    // Now some for define statements
+    [tokens.QuerySchema]: [
+        { suffixes: [[tokens.DEFINE]], suggestions: [ suggestLabels, suggestKinds] },
+        { suffixes: [[tokens.DEFINE, tokens.LABEL]], suggestions: [ suggestTypeConstraintKeywords] }
+    ],
+    [tokens.Definable]: [
+        { suffixes: [[tokens.COMMA], [tokens.KIND, tokens.LABEL]], suggestions: [ suggestTypeConstraintKeywords ] },
+        { suffixes: [[tokens.OWNS], [tokens.SUB] ], suggestions: [ suggestLabels ] },
+        // { suffixes: [ [tokens.PLAYS] ], suggestions: [ suggestRoleLabels ] }, // TODO
+    ],
     // TODO: ...
 };
