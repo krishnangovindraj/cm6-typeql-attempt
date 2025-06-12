@@ -7,6 +7,7 @@ import { EditorView } from "@codemirror/view";
 import { linter } from '@codemirror/lint'
 import { autocompletion } from "@codemirror/autocomplete";
 import { autocompleteTypeQL } from "./complete"
+import { Schema } from "./schema";
 
 export const TypeQLLanguage = LRLanguage.define({
   parser: parser.configure({
@@ -122,4 +123,8 @@ export function otherExampleLinter() {
     });
     return diagnostics;
   });
+}
+
+export function typeqlSchemaFromText(text: string): Schema {
+  return Schema.fromTypeQL(text);
 }
