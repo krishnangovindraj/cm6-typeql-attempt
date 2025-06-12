@@ -1,7 +1,8 @@
 import * as tokens from "./generated/typeql.grammar.generated.terms";
-import { CompletionContext, Completion, CompletionResult } from "@codemirror/autocomplete";
+import { CompletionContext, Completion } from "@codemirror/autocomplete";
 import { SyntaxNode, NodeType, Tree } from "@lezer/common"
 import { SuggestionMap, SuffixOfPrefixSuggestion, suggest } from "./complete";
+import { Schema } from "./schema";
 
 // The actual suggestions
 // TODO: See if we can make this declarative based on token sequences expected as prefixes of a given node.
@@ -64,19 +65,19 @@ function suggestTypeConstraintKeywords(): Completion[] {
     });
 }
 
-function suggestDefinedKeywords(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
+function suggestDefinedKeywords(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[], state: Schema): Completion[] {
     return ["define", "redefine", "undefine"].map((keyword) => suggest("keyword", keyword, 1));
 }
 
-function suggestPipelineStages(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
+function suggestPipelineStages(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[], state: Schema): Completion[] {
     return ["match", "insert", "delete", "update", "put", "select", "reduce", "sort", "limit", "offset", "end"].map((keyword) => suggest("keyword", keyword, 1))
 }
 
-function suggestKinds(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
+function suggestKinds(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[], state: Schema): Completion[] {
     return ["entity", "attribute", "relation"].map((keyword) => suggest("kind", keyword, 2));
 }
 
-function suggestNestedPatterns(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[]): Completion[] {
+function suggestNestedPatterns(context: CompletionContext, tree: Tree, parseAt: SyntaxNode, patternsNode: SyntaxNode, prefix: NodeType[], state: Schema): Completion[] {
     return ["not {};", "{} or {};", "try {};"].map((keyword) => suggest("method", keyword, 2));
 }
 
@@ -85,14 +86,15 @@ function suggestNestedPatterns(context: CompletionContext, tree: Tree, parseAt: 
 const SUFFIX_VAR_OR_COMMA = [[tokens.COMMA], [tokens.VAR]];
 
 
+// Will pick the first matching suffix. If you want to handle things manually, use an empty suffix, duh.
 
-const SUGGESTION_GROUP_FOR_THING_STATEMENTS: SuffixOfPrefixSuggestion[]  = [
+const SUGGESTION_GROUP_FOR_THING_STATEMENTS: SuffixOfPrefixSuggestion<Schema>[]  = [
         { suffixes: SUFFIX_VAR_OR_COMMA, suggestions: [suggestThingConstraintKeywords] },
         { suffixes: [[tokens.HAS], [tokens.ISA]], suggestions: [suggestLabels, suggestVariablesAtMinus10] },
         { suffixes: [[tokens.HAS, tokens.TypeRef], [tokens.ISA, tokens.TypeRef]], suggestions: [suggestVariablesAtMinus10] },
 ];
 
-export const SUGGESTION_MAP: SuggestionMap = {
+export const SUGGESTION_MAP: SuggestionMap<Schema> = {
     [tokens.LABEL]: [{ suffixes: [[]], suggestions: [suggestLabels] }],
     [tokens.VAR]: [{ suffixes: [[]], suggestions: [suggestVariablesAt10] }],
         

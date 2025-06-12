@@ -5,9 +5,10 @@ import { styleTags, tags as t } from "@lezer/highlight"
 import { Diagnostic } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 import { linter } from '@codemirror/lint'
-import { autocompletion } from "@codemirror/autocomplete";
-import { autocompleteTypeQL } from "./complete"
+import { autocompletion, CompletionContext } from "@codemirror/autocomplete";
+import { NodePrefixAutoComplete } from "./complete"
 import { Schema } from "./schema";
+import { SUGGESTION_MAP } from "./typeql_suggestions";
 
 export const TypeQLLanguage = LRLanguage.define({
   parser: parser.configure({
@@ -102,7 +103,9 @@ export function TypeQL() {
 
 
 export function typeqlAutocompleteExtension() {
-  return autocompletion({ activateOnTypingDelay: 100, override: [autocompleteTypeQL] });
+  let typeqlAutocomplete = new NodePrefixAutoComplete(SUGGESTION_MAP, new Schema({},{}));
+  let autocomplete_fn = (context: CompletionContext) => typeqlAutocomplete.autocomplete(context);
+  return autocompletion({ activateOnTypingDelay: 100, override: [autocomplete_fn] });
 }
 
 // A Linter which flags syntax errors from: https://discuss.codemirror.net/t/showing-syntax-errors/3111/6
