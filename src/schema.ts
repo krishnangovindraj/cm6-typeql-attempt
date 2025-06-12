@@ -1,5 +1,6 @@
-import { SyntaxNode, NodeType, Tree, TreeCursor } from "@lezer/common"
-import {parser} from "./typeql.grammar"
+import { SyntaxNode, Tree, TreeCursor } from "@lezer/common";
+import { CompletionContext } from "@codemirror/autocomplete";
+import {parser} from "./typeql.grammar";
 import * as tokens from "./generated/typeql.grammar.generated.terms";
 
 type TypeLabel = string;
@@ -16,6 +17,62 @@ function extractText(text: string, from: number, to: number): string {
 }
 
 export class Schema {
+    fromDB: SchemaImpl;
+    fromEditor: SchemaImpl;
+
+    constructor() {
+        this.fromDB = new SchemaImpl({}, {});
+        this.fromEditor = new SchemaImpl({}, {});
+    }
+
+    updateFromDB(schema: SchemaImpl): void {
+        this.fromDB = schema;
+    }
+    
+    mayUpdateFromEditorState(context: CompletionContext, tree: Tree): void {
+        this.fromEditor = SchemaImpl.fromTypeQL(context.state.sliceDoc(), tree);
+    }
+
+    attributeTypes(): TypeLabel[] {
+        return Object.keys(this.fromDB.attributes).concat(Object.keys(this.fromEditor.attributes));
+    }
+
+    objectTypes(): TypeLabel[] {
+        return Object.keys(this.fromDB.objectTypes).concat(Object.keys(this.fromEditor.objectTypes));
+    }
+
+    attributeType(type: TypeLabel): AttributeType {
+        if (this.fromDB.attributes[type]) {
+            return this.fromDB.attributes[type];
+        } else {
+            return this.fromEditor.attributes[type];
+        }
+    }
+
+    objectType(type: TypeLabel): ObjectType {
+        if (this.fromDB.objectTypes[type]) {
+            return this.fromDB.objectTypes[type];
+        } else {
+            return this.fromEditor.objectTypes[type];
+        }
+    }
+
+    getOwns(label: TypeLabel): TypeLabel[] {
+        const objectType = this.objectType(label);
+        return objectType ? objectType.owns : [];
+    }
+
+    getPlays(label: TypeLabel): TypeLabel[] {
+        const objectType = this.objectType(label);
+        return objectType ? objectType.plays : [];
+    }
+    getRelates(label: TypeLabel): TypeLabel[] {
+        const objectType = this.objectType(label);
+        return objectType ? objectType.relates : [];
+    }
+}
+
+export class SchemaImpl {
     objectTypes: Record<TypeLabel, ObjectType>;
     attributes: Record<TypeLabel, AttributeType>;
     constructor(
@@ -26,9 +83,9 @@ export class Schema {
         this.objectTypes = objectTypes;
     }
     
-    static fromTypeQL(text: string) : Schema {
-        let tree = parser.parse(text);
+    static fromTypeQL(text: string, tree: Tree) : SchemaImpl {
         let builder = new SchemaBuilder();
+        // TODO: Replace iterate with a more targetted traversal that considers only define queries.
         // Extract all type declarations from the tree
         tree.iterate({
             enter: (cursor: TreeCursor) => {
@@ -85,28 +142,6 @@ export class Schema {
         });
         return builder.build();
     }
-
-    attributeType(type: TypeLabel): AttributeType {
-        return this.attributes[type];
-    }
-
-    objectType(type: TypeLabel): ObjectType {
-        return this.objectTypes[type];
-    }
-
-    getOwns(label: TypeLabel): TypeLabel[] {
-        const objectType = this.objectType(label);
-        return objectType ? objectType.owns : [];
-    }
-
-    getPlays(label: TypeLabel): TypeLabel[] {
-        const objectType = this.objectType(label);
-        return objectType ? objectType.plays : [];
-    }
-    getRelates(label: TypeLabel): TypeLabel[] {
-        const objectType = this.objectType(label);
-        return objectType ? objectType.relates : [];
-    }
 }
 
 class SchemaBuilder {
@@ -151,7 +186,7 @@ class SchemaBuilder {
         }
     }
 
-    build(): Schema {
-        return new Schema(this.objectTypes, this.attributes);
+    build(): SchemaImpl {
+        return new SchemaImpl(this.objectTypes, this.attributes);
     }
 }

@@ -3,7 +3,6 @@ import { CompletionContext, Completion, CompletionResult } from "@codemirror/aut
 import { syntaxTree } from "@codemirror/language"
 import { SyntaxNode, NodeType, Tree } from "@lezer/common"
 import { SUGGESTION_MAP } from "./typeql_suggestions";
-import { Schema } from "./schema";
 
 export interface SuggestionMap<STATE> { 
     [key: number]: SuffixOfPrefixSuggestion<STATE>[]
@@ -29,8 +28,12 @@ export function suggest(type: string, label: string, boost: number = 0): Complet
     };
 }
 
+interface NodePrefixAutoCompleteState {
+    mayUpdateFromEditorState(context: CompletionContext, tree: Tree): void;
+}
+
 // See: https://codemirror.net/examples/autocompletion/ and maybe the SQL / HTML Example there.
-export class NodePrefixAutoComplete<STATE> {
+export class NodePrefixAutoComplete<STATE extends NodePrefixAutoCompleteState> {
     suggestionMap: SuggestionMap<STATE>;
     suggestorState: STATE;
 
@@ -43,6 +46,7 @@ export class NodePrefixAutoComplete<STATE> {
 
     autocomplete(context: CompletionContext): CompletionResult | null {
         let tree: Tree = syntaxTree(context.state);
+        this.suggestorState.mayUpdateFromEditorState(context, tree);
         let currentNode: SyntaxNode = tree.resolveInner(context.pos, -1); // https://lezer.codemirror.net/docs/ref/#common.SyntaxNode
         console.log(this);
         let options = this.getSuggestions(context, tree, currentNode);
@@ -72,7 +76,7 @@ export class NodePrefixAutoComplete<STATE> {
             this.logInterestingStuff(context, tree, parseAt, climbedTo, prefix);
             return null;
         }
-        let suggestionEither = SUGGESTION_MAP[climbedTo.type.id];
+        let suggestionEither = this.suggestionMap[climbedTo.type.id];
         if (suggestionEither != null) {
             for (var sops of (suggestionEither as SuffixOfPrefixSuggestion<STATE>[])) {
                 if (prefixHasAnyOfSuffixes(prefix, sops.suffixes)) {
